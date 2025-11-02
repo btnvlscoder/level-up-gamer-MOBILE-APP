@@ -16,7 +16,7 @@ data class ProductListUiState(
 
     /**
      * La lista de productos a mostrar.
-     * Por defecto, es una lista vacía.
+     * Por defecto, es una   lista vacía.
      */
     val productos: List<Producto> = emptyList()
 )
