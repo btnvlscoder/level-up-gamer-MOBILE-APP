@@ -60,7 +60,8 @@ fun ProductDetailScreen(
     // a nuestro Composable "tonto".
     ProductDetailContent(
         uiState = uiState,
-        onBackPress = onBackPress
+        onBackPress = onBackPress,
+        onAddToCartClick = { viewModel.addToCart() }
     )
 }
 
@@ -71,7 +72,8 @@ fun ProductDetailScreen(
 @Composable
 fun ProductDetailContent(
     uiState: ProductDetailUiState,
-    onBackPress: () -> Unit
+    onBackPress: () -> Unit,
+    onAddToCartClick: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -81,7 +83,7 @@ fun ProductDetailContent(
                 // Este es el botón de "atrás" en la barra superior.
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
@@ -114,7 +116,10 @@ fun ProductDetailContent(
                 // Caso 3: Tenemos el producto
                 uiState.producto != null -> {
                     // Usamos LazyColumn para que todo sea deslizable
-                    ProductDetails(producto = uiState.producto)
+                    ProductDetails(
+                        producto = uiState.producto,
+                        onAddToCartClick = onAddToCartClick
+                    )
                 }
             }
         }
@@ -127,7 +132,10 @@ fun ProductDetailContent(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ProductDetails(producto: Producto) {
+fun ProductDetails(
+    producto: Producto,
+    onAddToCartClick: () -> Unit
+) {
     // LazyColumn permite que el contenido sea "scrollable"
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -152,7 +160,7 @@ fun ProductDetails(producto: Producto) {
                     .aspectRatio(1f) // Lo hace cuadrado
             ) { pageIndex ->
                 Image(
-                    painter = painterResource(id = producto.imagenes[pageIndex]),
+                        painter = painterResource(id = producto.imagenes[pageIndex]),
                     contentDescription = "Imagen ${pageIndex + 1} de ${producto.nombre}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
@@ -164,7 +172,7 @@ fun ProductDetails(producto: Producto) {
             // mantendremos simple por ahora)
         }
 
-        // --- INFORMACIÓN DEL PRODUCTO ---
+        // --- info DEL PRODUCTO ---
         item {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -191,11 +199,9 @@ fun ProductDetails(producto: Producto) {
                     modifier = Modifier.padding(top = 8.dp)
                 )
 
-                // (5) ¡NUEVO! Botón de Agregar
+                //btn de Agregar
                 Button(
-                    onClick = {
-                        // TODO: Lógica para agregar al carrito
-                    },
+                    onClick = onAddToCartClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 16.dp)

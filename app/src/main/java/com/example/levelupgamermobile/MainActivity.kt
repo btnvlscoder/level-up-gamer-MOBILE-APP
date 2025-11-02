@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.ui.theme.LevelUpGamerMobileTheme
+import com.example.levelupgamermobile.view.CartScreen
 import com.example.levelupgamermobile.view.ProductDetailScreen
 import com.example.levelupgamermobile.view.ProductListScreen
 
@@ -55,6 +56,9 @@ class MainActivity : ComponentActivity() {
                                     navController.navigate(
                                         AppScreens.productDetail(productId)
                                     )
+                                },
+                                onCartClick = {
+                                    navController.navigate(AppScreens.CART) // Navega al carrito
                                 }
                             )
                         }
@@ -79,7 +83,14 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-
+                        composable(route = AppScreens.CART) {
+                            CartScreen(
+                                viewModel = viewModel(),
+                                onBackPress = {
+                                    navController.popBackStack() // Volver atrás
+                                }
+                            )
+                        }
                         // (Aquí irán nuestras futuras rutas:
                         // Login, Carrito, Contacto, etc.)
                     }

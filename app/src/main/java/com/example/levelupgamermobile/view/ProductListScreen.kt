@@ -1,5 +1,10 @@
 package com.example.levelupgamermobile.view
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,13 +50,15 @@ import androidx.compose.foundation.clickable
 @Composable
 fun ProductListScreen(
     viewModel: ProductListViewModel = viewModel(),
-    onProductClick: (String) -> Unit  // <-- AÑADE ESTE PARÁMETRO
+    onProductClick: (String) -> Unit,
+    onCartClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     ProductList(
         uiState = uiState,
-        onProductClick = onProductClick  // <-- PÁSALO A LA FUNCIÓN "TONTA"
+        onProductClick = onProductClick,
+        onCartClick = onCartClick// <-- PÁSALO A LA FUNCIÓN "TONTA"
     )
 }
 
@@ -64,12 +71,23 @@ fun ProductListScreen(
 @Composable
 fun ProductList(
     uiState: ProductListUiState,
-    onProductClick: (String) -> Unit
+    onProductClick: (String) -> Unit,
+    onCartClick: () -> Unit
 ) {
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Level-Up Gamer") })
+            TopAppBar(
+                title = { Text("Level-Up Gamer") },
+                actions = {
+                    IconButton(onClick = onCartClick) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Ir al carrito"
+                        )
+                    }
+                }
+            )
         }
     ) { paddingValues ->
             // LazyVerticalGrid es el equivalente a tu "contenedor-productos".

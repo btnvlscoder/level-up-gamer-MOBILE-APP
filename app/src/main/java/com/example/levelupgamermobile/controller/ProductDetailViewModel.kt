@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.levelupgamermobile.data.ProductRepository
+import com.example.levelupgamermobile.data.CartRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -19,7 +20,7 @@ class ProductDetailViewModel(
 ) : ViewModel() {
 
     private val repository = ProductRepository
-
+    private val cartRepository = CartRepository
     // (2) El Estado (igual que en el ViewModel de lista)
     private val _uiState = MutableStateFlow(ProductDetailUiState())
     val uiState: StateFlow<ProductDetailUiState> = _uiState.asStateFlow()
@@ -32,7 +33,7 @@ class ProductDetailViewModel(
      * (4) El bloque "init"
      * Se ejecuta en cuanto se crea el ViewModel
      */
-    init {
+    init     {
         // Lanzamos una corrutina (proceso en 2do plano)
         // para ir a buscar el producto.
         viewModelScope.launch {
@@ -48,6 +49,18 @@ class ProductDetailViewModel(
                     error = if (producto == null) "Producto no encontrado" else null
                 )
             }
+        }
+    }
+
+    fun addToCart() {
+        // Obtenemos el producto del estado actual
+        val producto = _uiState.value.producto
+
+        // Solo si el producto no es null, lo agregamos
+        if (producto != null) {
+            cartRepository.addItem(producto)
+            // (En el futuro, aquí podríamos mostrar un
+            // mensaje de "¡Agregado con éxito!")
         }
     }
 }
