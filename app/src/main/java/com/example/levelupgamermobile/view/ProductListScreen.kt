@@ -29,7 +29,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.ProductListUiState
-import com.example.levelupgamermobile.controller.ProductViewModel
+import com.example.levelupgamermobile.controller.ProductListViewModel
 import com.example.levelupgamermobile.model.Producto
 import java.text.NumberFormat
 import java.util.Locale
@@ -43,7 +43,7 @@ import java.util.Locale
 fun ProductListScreen(
     // pro-tip: viewModel() es una función que automáticamente
     // te da la instancia correcta del ViewModel.
-    viewModel: ProductViewModel = viewModel()
+    viewModel: ProductListViewModel = viewModel()
 ) {
     // Observamos el estado.
     // "by" es un truco de Kotlin para tratar el estado
