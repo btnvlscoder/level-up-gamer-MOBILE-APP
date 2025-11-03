@@ -1,6 +1,7 @@
 package com.example.levelupgamermobile.view
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -16,27 +17,34 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.navigation.BottomNavItem
+import com.example.levelupgamermobile.navigation.ProfileNavRoutes
+
+import com.example.levelupgamermobile.view.InfoPersonalScreen
+import com.example.levelupgamermobile.view.ProfileMenuScreen
+import com.example.levelupgamermobile.view.SoporteScreen
+import com.example.levelupgamermobile.view.TerminosScreen
+import com.example.levelupgamermobile.view.AcercaDeScreen
+import com.example.levelupgamermobile.view.MisOpinionesScreen
+import com.example.levelupgamermobile.view.MisTicketsScreen
+import com.example.levelupgamermobile.view.PlaceholderScreen
 
 /**
- * Esta es la pantalla CONTENEDORA principal.
- * Maneja su propia navegación interna (las pestañas).
+ * Pantalla contenedora principal.
  *
- * @param mainNavController El controlador de navegación "principal"
- * (de MainActivity) para poder navegar "fuera" de esta pantalla
- * (ej. al hacer logout o al ir al detalle de un producto).
+ * @param mainNavController El NavController "Padre" (de MainActivity)
+ * @param onLogoutComplete Función para cerrar sesión (navega al Login)
  */
+@OptIn(ExperimentalMaterial3Api::class) // Necesario para Scaffold y NavigationBar
 @Composable
 fun HomeScreen(
     mainNavController: NavHostController,
     onLogoutComplete: () -> Unit
 ) {
-    // (1) ¡NUEVO NavController!
-    // Este es el controlador "anidado" o "interno"
-    // que manejará SÓLO las pestañas (Tienda, Carrito, Perfil).
+    // (1) El NavController "anidado" o "interno"
     val nestedNavController = rememberNavController()
 
-    // (2) Lista de nuestras pestañas
     val items = listOf(
         BottomNavItem.Store,
         BottomNavItem.Cart,
@@ -44,30 +52,30 @@ fun HomeScreen(
     )
 
     Scaffold(
-        // (3) La Barra de Navegación Inferior
         bottomBar = {
             NavigationBar {
                 val navBackStackEntry by nestedNavController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination
 
-                // (4) Creamos un botón por cada item en nuestra lista
                 items.forEach { screen ->
+                    // (2) Lógica para que "Perfil" siga seleccionado
+                    // en las pantallas internas (ej. InfoPersonal)
+                    val isSelected = currentDestination?.hierarchy?.any {
+                        it.route == screen.route ||
+                                // Si la ruta actual es parte del flujo de Perfil, marca "Perfil"
+                                (screen == BottomNavItem.Profile && it.route?.startsWith("profile_") == true)
+                    } == true
+
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
-                        selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                        selected = isSelected,
                         onClick = {
-                            // (5) Lógica de navegación interna
                             nestedNavController.navigate(screen.route) {
-                                // Pop up to the start destination of the graph to
-                                // avoid building up a large stack of destinations
-                                // on the back stack as users select items
                                 popUpTo(nestedNavController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
-                                // Evita múltiples copias de la misma pestaña
                                 launchSingleTop = true
-                                // Restaura el estado al volver a seleccionar
                                 restoreState = true
                             }
                         }
@@ -76,41 +84,90 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
-        // (6) ¡NUEVO NavHost!
-        // Este es el NavHost "interno" que dibuja la pantalla
-        // correspondiente a la pestaña seleccionada.
+        // (3) Este NavHost "interno" maneja las 3 pestañas
         NavHost(
             navController = nestedNavController,
-            startDestination = BottomNavItem.Store.route, // Empezamos en la Tienda
+            startDestination = BottomNavItem.Store.route, // Pestaña inicial: Tienda
             modifier = Modifier.padding(innerPadding)
         ) {
 
             // --- Pestaña 1: Tienda ---
             composable(BottomNavItem.Store.route) {
                 ProductListScreen(
-                    // ¡OJO! Pasamos el NavController PRINCIPAL
-                    // para que pueda navegar al detalle del producto.
                     onProductClick = { productId ->
-                        mainNavController.navigate("product_detail/$productId")
-                    },
-
+                        // Usa el NavController "Padre" para ir a Detalle
+                        mainNavController.navigate(AppScreens.productDetail(productId))
+                    }
                 )
             }
 
             // --- Pestaña 2: Carrito ---
             composable(BottomNavItem.Cart.route) {
                 CartScreen(
-                    // Le decimos que vuelva a la pestaña anterior
                     onBackPress = { nestedNavController.popBackStack() }
                 )
             }
 
-            // --- Pestaña 3: Perfil ---
+            // --- Pestaña 3: Perfil (El Menú) ---
+            // Esta es la entrada al "sub-flujo" de perfil
             composable(BottomNavItem.Profile.route) {
-                ProfileScreen(
-                    // Le pasamos la función de logout
-                    // que viene desde MainActivity
-                    onLogoutComplete = onLogoutComplete
+                ProfileMenuScreen(
+                    onNavigate = { route ->
+                        nestedNavController.navigate(route)
+                    }
+                )
+            }
+
+            // --- (4) ¡NUEVAS RUTAS! (Las pantallas del menú de perfil) ---
+
+            // --- Información Personal (la que antes era ProfileScreen) ---
+            composable(ProfileNavRoutes.INFO_PERSONAL) {
+                InfoPersonalScreen(
+                    onLogoutComplete = onLogoutComplete, // Pasa la función de Logout
+                    onBackPress = { nestedNavController.popBackStack() }
+                )
+            }
+
+            // --- Soporte (Maqueta) ---
+            composable(ProfileNavRoutes.SOPORTE) {
+                SoporteScreen(
+                    onBackPress = { nestedNavController.popBackStack() }
+                )
+            }
+
+            // --- Mis Tickets (Maqueta) ---
+            composable(ProfileNavRoutes.MIS_TICKETS) {
+                MisTicketsScreen(
+                    onBackPress = { nestedNavController.popBackStack() }
+                )
+            }
+
+            // --- Mis Opiniones (Lógica Local) ---
+            composable(ProfileNavRoutes.MIS_OPINIONES) {
+                MisOpinionesScreen(
+                    onBackPress = { nestedNavController.popBackStack() }
+                )
+            }
+
+            // --- Términos (Maqueta) ---
+            composable(ProfileNavRoutes.TERMINOS) {
+                TerminosScreen(
+                    onBackPress = { nestedNavController.popBackStack() }
+                )
+            }
+
+            // --- Acerca De (Maqueta) ---
+            composable(ProfileNavRoutes.ACERCA_DE) {
+                AcercaDeScreen(
+                    onBackPress = { nestedNavController.popBackStack() }
+                )
+            }
+
+            // --- Mis Compras (Placeholder) ---
+            composable(ProfileNavRoutes.MIS_COMPRAS) {
+                PlaceholderScreen(
+                    title = "Mis Compras",
+                    onBackPress = { nestedNavController.popBackStack() }
                 )
             }
         }

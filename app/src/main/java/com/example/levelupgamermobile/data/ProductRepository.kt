@@ -8,60 +8,70 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-// V--- ¡AÑADE ESTOS IMPORTS! ---V
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
-// A--- FIN DE IMPORTS ---A
 import java.util.UUID
 
 object ProductRepository {
 
-    // --- (SECCIÓN DE PRODUCTOS - SIN CAMBIOS) ---
-    fun getProductos(): List<Producto> {
-        return LocalProductDataSource.productos
-    }
+    // --- Sección de Productos ---
+    fun getProductos(): List<Producto> = LocalProductDataSource.productos
+    fun getProductoPorCodigo(codigo: String): Producto? =
+        LocalProductDataSource.productos.find { it.codigo == codigo }
 
-    fun getProductoPorCodigo(codigo: String): Producto? {
-        return LocalProductDataSource.productos.find { producto ->
-            producto.codigo == codigo
-        }
-    }
-
-    // --- (¡NUEVO!) SECCIÓN DE RESEÑAS ---
-
-    // (1) Creamos un Scope para el Repositorio (ya que no es un ViewModel)
+    // --- Sección de Reseñas ---
     private val repositoryScope = CoroutineScope(Dispatchers.Default)
-
     private val _reviews = MutableStateFlow<List<Resena>>(emptyList())
-
+    val allReviewsFlow: StateFlow<List<Resena>> = _reviews.asStateFlow()
     /**
-     * Devuelve un "Flow" (flujo) de reseñas SÓLO para un producto.
+     * Devuelve un flujo de reseñas SÓLO para un producto.
      */
     fun getReviewsForProduct(productId: String): StateFlow<List<Resena>> {
         return _reviews
             .map { list -> list.filter { it.productId == productId } }
-            // V--- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---V
+            // ¡CORREGIDO! Usamos stateIn
             .stateIn(
                 scope = repositoryScope,
                 started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList() // Valor inicial: lista vacía
+                initialValue = emptyList()
             )
-        // A--- FIN DE LA CORRECCIÓN ---A
     }
 
     /**
-     * Añade una nueva reseña a nuestra "base de datos" en memoria.
+     * Añade o actualiza una reseña (1 por usuario/producto).
      */
-    fun addReview(productId: String, userName: String, calificacion: Int, comentario: String) {
+    fun addReview(
+        productId: String,
+        userEmail: String,
+        userName: String,
+        calificacion: Int,
+        comentario: String
+    ) {
         _reviews.update { listaActual ->
+            // Busca si el usuario ya dejó una reseña para este producto
+            val reseñaExistente = listaActual.find {
+                it.productId == productId && it.userEmail == userEmail
+            }
+
             val nuevaResena = Resena(
-                id = UUID.randomUUID().toString(),
+                id = reseñaExistente?.id ?: UUID.randomUUID().toString(), // Usa ID viejo o crea uno nuevo
                 productId = productId,
+                userEmail = userEmail,
                 userName = userName,
                 calificacion = calificacion,
                 comentario = comentario
             )
-            listaActual + nuevaResena
+
+            if (reseñaExistente != null) {
+                // Si existe: Reemplaza la reseña antigua
+                listaActual.map {
+                    if (it.id == reseñaExistente.id) nuevaResena else it
+                }
+            } else {
+                // Si no existe: Añade la nueva reseña
+                listaActual + nuevaResena
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ import com.example.levelupgamermobile.data.AuthRepository
 import com.example.levelupgamermobile.data.CartRepository
 import com.example.levelupgamermobile.data.ProductRepository
 import com.example.levelupgamermobile.model.Resena
+import com.example.levelupgamermobile.model.Producto // ¡Importa Producto!
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,24 +15,23 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.SharingStarted // Import
-import kotlinx.coroutines.flow.stateIn // Import
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.stateIn
 
 class ProductDetailViewModel(
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    // (1) Obtenemos todos los repositorios
     private val productRepository = ProductRepository
     private val cartRepository = CartRepository
     private val authRepository = AuthRepository
 
     private val productId: String = checkNotNull(savedStateHandle["productId"])
 
-    // (2) Estado interno para el producto y el error
+    // Estado interno para el producto
     private val _producto = MutableStateFlow(ProductDetailUiState())
 
-    // (3) El UiState se "combina"
+    // El UiState combinado (producto + reseñas)
     val uiState: StateFlow<ProductDetailUiState> = combine(
         _producto,
         productRepository.getReviewsForProduct(productId)
@@ -48,7 +48,7 @@ class ProductDetailViewModel(
             averageRating = avgRating
         )
     }
-        // (4) ¡CORREGIDO! Usamos stateIn
+        // ¡CORREGIDO! Usamos stateIn
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -56,7 +56,7 @@ class ProductDetailViewModel(
         )
 
     init {
-        // Carga el producto (esto es igual que antes)
+        // Carga el producto
         viewModelScope.launch {
             val producto = productRepository.getProductoPorCodigo(productId)
             _producto.update {
@@ -69,7 +69,7 @@ class ProductDetailViewModel(
         }
     }
 
-    // (6) Acción de Agregar al Carrito (sin cambios)
+    // Acción de Agregar al Carrito
     fun addToCart() {
         val producto = _producto.value.producto
         if (producto != null) {
@@ -77,13 +77,16 @@ class ProductDetailViewModel(
         }
     }
 
-    // (7) ¡NUEVA ACCIÓN! Añadir una reseña
+    // Acción de Añadir una reseña
     fun addReview(calificacion: Int, comentario: String) {
         viewModelScope.launch {
+            // Obtiene el nombre y email del usuario logueado
             val userName = authRepository.userNameFlow.first() ?: "Anónimo"
+            val userEmail = authRepository.userEmailFlow.first() ?: "anon@anon.com"
 
             productRepository.addReview(
                 productId = productId,
+                userEmail = userEmail,
                 userName = userName,
                 calificacion = calificacion,
                 comentario = comentario

@@ -74,7 +74,6 @@ fun ProductDetailScreen(
         uiState = uiState,
         onBackPress = onBackPress,
         onAddToCartClick = { viewModel.addToCart() },
-        // ¡NUEVO! Pasamos la acción de añadir reseña
         onAddReview = { calificacion, comentario ->
             viewModel.addReview(calificacion, comentario)
         }
@@ -90,7 +89,7 @@ fun ProductDetailContent(
     uiState: ProductDetailUiState,
     onBackPress: () -> Unit,
     onAddToCartClick: () -> Unit,
-    onAddReview: (Int, String) -> Unit // ¡NUEVO!
+    onAddReview: (Int, String) -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -122,7 +121,6 @@ fun ProductDetailContent(
                     )
                 }
                 uiState.producto != null -> {
-                    // ¡NUEVO! Pasamos la acción al Composable de detalles
                     ProductDetails(
                         producto = uiState.producto,
                         reviews = uiState.reviews,
@@ -143,16 +141,16 @@ fun ProductDetailContent(
 @Composable
 fun ProductDetails(
     producto: Producto,
-    reviews: List<Resena>, // ¡NUEVO!
-    averageRating: Float, // ¡NUEVO!
+    reviews: List<Resena>,
+    averageRating: Float,
     onAddToCartClick: () -> Unit,
-    onAddReview: (Int, String) -> Unit // ¡NUEVO!
+    onAddReview: (Int, String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        // --- SLIDER DE IMÁGENES (Sin cambios) ---
+        // --- SLIDER DE IMÁGENES ---
         item {
             val pagerState = rememberPagerState(
                 initialPage = 0,
@@ -190,7 +188,7 @@ fun ProductDetails(
                     fontWeight = FontWeight.Bold
                 )
 
-                // ¡NUEVO! Mostramos la calificación promedio
+                // Muestra la calificación promedio
                 StarRatingDisplay(rating = averageRating, reviewCount = reviews.size)
 
                 Text(
@@ -214,7 +212,7 @@ fun ProductDetails(
             }
         }
 
-        // --- (¡NUEVO!) SECCIÓN DE RESEÑAS ---
+        // --- SECCIÓN DE RESEÑAS ---
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {
                 Divider(modifier = Modifier.padding(vertical = 16.dp))
@@ -241,7 +239,7 @@ fun ProductDetails(
     }
 }
 
-// --- (¡NUEVO!) FORMULARIO DE RESEÑA ---
+// --- FORMULARIO DE RESEÑA ---
 @Composable
 fun AddReviewForm(
     onAddReview: (Int, String) -> Unit
@@ -261,33 +259,32 @@ fun AddReviewForm(
             rating = rating,
             onRatingChange = {
                 rating = it
-                showError = false // Oculta el error al cambiar
+                showError = false
             }
         )
 
         OutlinedTextField(
             value = comentario,
-            onValueChange = { comentario = it },
+            // V--- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---V
+            onValueChange = { comentario = it }, // Era "onValueCodeChange"
             label = { Text("Escribe tu comentario...") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3
         )
 
-        // Muestra error si no se seleccionó calificación
         if (showError) {
             Text("Por favor, selecciona una calificación (1-5)", color = MaterialTheme.colorScheme.error)
         }
 
         Button(
             onClick = {
-                if (rating > 0) { // Solo envía si hay calificación
+                if (rating > 0) {
                     onAddReview(rating, comentario)
-                    // Resetea el formulario
                     rating = 0
                     comentario = ""
                     showError = false
                 } else {
-                    showError = true // Muestra error
+                    showError = true
                 }
             },
             modifier = Modifier.align(Alignment.End)
@@ -297,7 +294,7 @@ fun AddReviewForm(
     }
 }
 
-// --- (¡NUEVO!) LISTA DE RESEÑAS ---
+// --- LISTA DE RESEÑAS ---
 @Composable
 fun ReviewsList(reviews: List<Resena>) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -305,7 +302,7 @@ fun ReviewsList(reviews: List<Resena>) {
             Card(elevation = CardDefaults.cardElevation(2.dp)) {
                 Column(Modifier.fillMaxWidth().padding(12.dp)) {
                     Text(
-                        review.userName,
+                        review.userName, // Muestra solo el nombre de pila
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -318,7 +315,7 @@ fun ReviewsList(reviews: List<Resena>) {
     }
 }
 
-// --- (¡NUEVO!) HELPER: INPUT DE ESTRELLAS ---
+// --- HELPER: INPUT DE ESTRELLAS ---
 @Composable
 fun StarRatingInput(
     rating: Int,
@@ -332,19 +329,19 @@ fun StarRatingInput(
                 contentDescription = "Estrella $index",
                 tint = LvlUpGreen,
                 modifier = Modifier
-                    .size(40.dp) // Estrellas más grandes
+                    .size(40.dp)
                     .clickable { onRatingChange(index) }
             )
         }
     }
 }
 
-// --- (¡NUEVO!) HELPER: MOSTRAR ESTRELLAS (PROMEDIO) ---
+// --- HELPER: MOSTRAR ESTRELLAS (PROMEDIO) ---
 @Composable
 fun StarRatingDisplay(
     rating: Float,
     modifier: Modifier = Modifier,
-    reviewCount: Int? = null // Opcional
+    reviewCount: Int? = null
 ) {
     Row(
         modifier = modifier,
@@ -354,20 +351,16 @@ fun StarRatingDisplay(
         val halfStar = ceil(rating) - floor(rating) > 0.4
         val emptyStars = 5 - fullStars - (if (halfStar) 1 else 0)
 
-        // Estrellas llenas
         repeat(fullStars) {
             Icon(Icons.Filled.Star, contentDescription = null, tint = LvlUpGreen)
         }
-        // Media estrella
         if (halfStar) {
             Icon(Icons.Filled.StarHalf, contentDescription = null, tint = LvlUpGreen)
         }
-        // Estrellas vacías
         repeat(emptyStars) {
             Icon(Icons.Filled.StarBorder, contentDescription = null, tint = LvlUpGreen)
         }
 
-        // (Opcional) Muestra el número de reseñas
         if (reviewCount != null) {
             Text(
                 " ($reviewCount)",
@@ -379,7 +372,7 @@ fun StarRatingDisplay(
     }
 }
 
-// --- (HELPER DE PRECIO - SIN CAMBIOS) ---
+// --- HELPER DE PRECIO ---
 private fun formatPrice(price: Int): String {
     val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
     format.maximumFractionDigits = 0
