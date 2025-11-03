@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,8 +16,10 @@ import androidx.navigation.navArgument
 import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.ui.theme.LevelUpGamerMobileTheme
 import com.example.levelupgamermobile.view.CartScreen
+import com.example.levelupgamermobile.view.LoginScreen
 import com.example.levelupgamermobile.view.ProductDetailScreen
 import com.example.levelupgamermobile.view.ProductListScreen
+import com.example.levelupgamermobile.view.RegisterScreen // ¡Importa la nueva pantalla!
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -29,70 +30,92 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // (1) Creamos el controlador de navegación
-                    // "rememberNavController" crea y "recuerda" el
-                    // controlador que gestiona nuestras pantallas.
                     val navController: NavHostController = rememberNavController()
 
-                    // (2) Creamos el "Anfitrión" de Navegación
-                    // "NavHost" es el contenedor que cambiará las pantallas.
+                    // (1) ¡CAMBIO MINUCIOSO!
+                    // El `NavHost` ahora inicia en LOGIN,
+                    // no en PRODUCT_LIST.
                     NavHost(
                         navController = navController,
-                        // Le decimos cuál es nuestra pantalla inicial
-                        startDestination = AppScreens.PRODUCT_LIST
+                        startDestination = AppScreens.LOGIN
                     ) {
 
-                        // --- Ruta 1: La Lista de Productos ---
+                        // --- Ruta 1: Login ---
+                        composable(route = AppScreens.LOGIN) {
+                            LoginScreen(
+                                // (viewModel() usará el valor por defecto)
+                                onLoginSuccess = {
+                                    // ¡Navegación exitosa!
+                                    navController.navigate(AppScreens.PRODUCT_LIST) {
+                                        // ¡MUY IMPORTANTE!
+                                        // Borra el historial de navegación
+                                        // para que el usuario no pueda "volver"
+                                        // a la pantalla de Login.
+                                        popUpTo(AppScreens.LOGIN) { inclusive = true }
+                                    }
+                                },
+                                onRegisterClick = {
+                                    // Navega a la pantalla de registro
+                                    navController.navigate(AppScreens.REGISTER)
+                                }
+                            )
+                        }
+
+                        // --- Ruta 2: Registro ---
+                        composable(route = AppScreens.REGISTER) {
+                            RegisterScreen(
+                                onRegisterSuccess = {
+                                    // Si el registro es exitoso,
+                                    // lo mandamos a la lista de productos
+                                    // (igual que el login).
+                                    navController.navigate(AppScreens.PRODUCT_LIST) {
+                                        // Borra el historial (Login y Register)
+                                        popUpTo(AppScreens.LOGIN) { inclusive = true }
+                                    }
+                                },
+                                onBackClick = {
+                                    // Simplemente vuelve atrás (al Login)
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
+                        // --- Ruta 3: Lista de Productos ---
                         composable(route = AppScreens.PRODUCT_LIST) {
-                            // Llamamos a nuestra pantalla de lista
                             ProductListScreen(
-                                viewModel = viewModel(),
-                                // ¡NUEVO! Le pasamos una "función"
-                                // que se ejecutará cuando se haga clic
-                                // en un producto.
                                 onProductClick = { productId ->
-                                    // Le decimos al "navController" que navegue
-                                    // a la ruta de detalle.
                                     navController.navigate(
                                         AppScreens.productDetail(productId)
                                     )
                                 },
                                 onCartClick = {
-                                    navController.navigate(AppScreens.CART) // Navega al carrito
+                                    navController.navigate(AppScreens.CART)
                                 }
                             )
                         }
 
-                        // --- Ruta 2: El Detalle del Producto ---
+                        // --- Ruta 4: Detalle de Producto ---
                         composable(
                             route = AppScreens.PRODUCT_DETAIL,
-                            // Le decimos que esta ruta espera un argumento
                             arguments = listOf(navArgument("productId") {
                                 type = NavType.StringType
                             })
                         ) {
-                            // Llamamos a nuestra pantalla de detalle
                             ProductDetailScreen(
-                                // El ViewModel se crea solo y es
-                                // lo bastante inteligente para tomar
-                                // el "productId" de la ruta.
-                                viewModel = viewModel(),
-                                // Le pasamos la función para "volver atrás"
                                 onBackPress = {
                                     navController.popBackStack()
                                 }
                             )
                         }
+
+                        // --- Ruta 5: Carrito ---
                         composable(route = AppScreens.CART) {
                             CartScreen(
-                                viewModel = viewModel(),
                                 onBackPress = {
-                                    navController.popBackStack() // Volver atrás
+                                    navController.popBackStack()
                                 }
                             )
                         }
-                        // (Aquí irán nuestras futuras rutas:
-                        // Login, Carrito, Contacto, etc.)
                     }
                 }
             }
