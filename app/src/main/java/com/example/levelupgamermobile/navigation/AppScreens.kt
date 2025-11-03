@@ -6,8 +6,9 @@ package com.example.levelupgamermobile.navigation
  * a mano en todos lados.
  */
 object AppScreens {
+    const val LOGIN = "login"
+    const val REGISTER = "register"
     const val PRODUCT_LIST = "product_list"
-
     // Esta es una ruta "dinámica".
     // "{productId}" significa que esperamos un argumento
     // que se llamará "productId".
