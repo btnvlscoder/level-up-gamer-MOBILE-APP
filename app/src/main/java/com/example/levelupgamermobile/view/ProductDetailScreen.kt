@@ -2,33 +2,49 @@ package com.example.levelupgamermobile.view
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material.icons.filled.StarHalf
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -37,62 +53,60 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.ProductDetailUiState
 import com.example.levelupgamermobile.controller.ProductDetailViewModel
 import com.example.levelupgamermobile.model.Producto
+import com.example.levelupgamermobile.model.Resena
+import com.example.levelupgamermobile.ui.theme.LvlUpGreen
 import java.text.NumberFormat
 import java.util.Locale
+import kotlin.math.ceil
+import kotlin.math.floor
 
 /**
- * Esta es la función "inteligente" (Smart Composable).
- * Es responsable de obtener el ViewModel y el estado.
- *
- * (1) ¡NUEVO!
- * Nota que ahora recibe un parámetro: "onBackPress".
- * Esto es para que podamos decirle al botón "Atrás" qué hacer.
+ * Pantalla "inteligente" (Smart Composable).
  */
 @Composable
 fun ProductDetailScreen(
     viewModel: ProductDetailViewModel = viewModel(),
     onBackPress: () -> Unit
 ) {
-    // Observamos el estado del ViewModel de detalle
     val uiState by viewModel.uiState.collectAsState()
 
-    // Le pasamos el estado y la acción de "volver"
-    // a nuestro Composable "tonto".
     ProductDetailContent(
         uiState = uiState,
         onBackPress = onBackPress,
-        onAddToCartClick = { viewModel.addToCart() }
+        onAddToCartClick = { viewModel.addToCart() },
+        // ¡NUEVO! Pasamos la acción de añadir reseña
+        onAddReview = { calificacion, comentario ->
+            viewModel.addReview(calificacion, comentario)
+        }
     )
 }
 
 /**
- * Este es el Composable "tonto" que dibuja la UI.
+ * Composable "tonto" que solo dibuja la UI.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailContent(
     uiState: ProductDetailUiState,
     onBackPress: () -> Unit,
-    onAddToCartClick: () -> Unit
+    onAddToCartClick: () -> Unit,
+    onAddReview: (Int, String) -> Unit // ¡NUEVO!
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Detalle del Producto") },
-                // (2) ¡NUEVO!
-                // Este es el botón de "atrás" en la barra superior.
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Volver"
+                        )
                     }
                 }
             )
         }
     ) { paddingValues ->
-
-        // (3) ¡NUEVO!
-        // Usamos un "Box" para centrar el indicador de carga
-        // o el mensaje de error.
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -100,25 +114,21 @@ fun ProductDetailContent(
             contentAlignment = Alignment.Center
         ) {
             when {
-                // Caso 1: Estamos cargando
-                uiState.isLoading -> {
-                    CircularProgressIndicator()
-                }
-
-                // Caso 2: Hubo un error
+                uiState.isLoading -> { CircularProgressIndicator() }
                 uiState.error != null -> {
                     Text(
                         text = uiState.error,
                         color = MaterialTheme.colorScheme.error
                     )
                 }
-
-                // Caso 3: Tenemos el producto
                 uiState.producto != null -> {
-                    // Usamos LazyColumn para que todo sea deslizable
+                    // ¡NUEVO! Pasamos la acción al Composable de detalles
                     ProductDetails(
                         producto = uiState.producto,
-                        onAddToCartClick = onAddToCartClick
+                        reviews = uiState.reviews,
+                        averageRating = uiState.averageRating,
+                        onAddToCartClick = onAddToCartClick,
+                        onAddReview = onAddReview
                     )
                 }
             }
@@ -127,52 +137,43 @@ fun ProductDetailContent(
 }
 
 /**
- * Este Composable dibuja los detalles del producto
- * cuando ya los tenemos.
+ * Dibuja los detalles del producto
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductDetails(
     producto: Producto,
-    onAddToCartClick: () -> Unit
+    reviews: List<Resena>, // ¡NUEVO!
+    averageRating: Float, // ¡NUEVO!
+    onAddToCartClick: () -> Unit,
+    onAddReview: (Int, String) -> Unit // ¡NUEVO!
 ) {
-    // LazyColumn permite que el contenido sea "scrollable"
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        // Quitamos el padding de la lista para que la imagen
-        // ocupe todo el ancho.
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        // --- (4) ¡NUEVO! SLIDER DE IMÁGENES ---
+        // --- SLIDER DE IMÁGENES (Sin cambios) ---
         item {
-            // "rememberPagerState" guarda la página actual
             val pagerState = rememberPagerState(
                 initialPage = 0,
                 pageCount = { producto.imagenes.size }
             )
-
-            // "HorizontalPager" es el Composable que
-            // permite deslizar entre páginas (imágenes).
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f) // Lo hace cuadrado
+                    .aspectRatio(1f)
             ) { pageIndex ->
                 Image(
-                        painter = painterResource(id = producto.imagenes[pageIndex]),
+                    painter = painterResource(id = producto.imagenes[pageIndex]),
                     contentDescription = "Imagen ${pageIndex + 1} de ${producto.nombre}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             }
-
-            // (Aquí podríamos agregar los "puntitos"
-            // indicadores de la página, pero lo
-            // mantendremos simple por ahora)
         }
 
-        // --- info DEL PRODUCTO ---
+        // --- INFORMACIÓN DEL PRODUCTO ---
         item {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -188,8 +189,12 @@ fun ProductDetails(
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold
                 )
+
+                // ¡NUEVO! Mostramos la calificación promedio
+                StarRatingDisplay(rating = averageRating, reviewCount = reviews.size)
+
                 Text(
-                    text = formatPrice(producto.precio), // Usamos el helper
+                    text = formatPrice(producto.precio),
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -198,8 +203,6 @@ fun ProductDetails(
                     style = MaterialTheme.typography.bodyLarge,
                     modifier = Modifier.padding(top = 8.dp)
                 )
-
-                //btn de Agregar
                 Button(
                     onClick = onAddToCartClick,
                     modifier = Modifier
@@ -210,16 +213,173 @@ fun ProductDetails(
                 }
             }
         }
+
+        // --- (¡NUEVO!) SECCIÓN DE RESEÑAS ---
+        item {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                Divider(modifier = Modifier.padding(vertical = 16.dp))
+                Text(
+                    "Reseñas y Calificaciones",
+                    style = MaterialTheme.typography.titleLarge
+                )
+                // Formulario para añadir reseña
+                AddReviewForm(onAddReview = onAddReview)
+
+                Spacer(Modifier.height(16.dp))
+
+                // Lista de reseñas
+                if (reviews.isEmpty()) {
+                    Text(
+                        "Este producto aún no tiene reseñas. ¡Sé el primero!",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                } else {
+                    ReviewsList(reviews = reviews)
+                }
+            }
+        }
     }
 }
 
-// --- (6) FUNCIÓN HELPER (AYUDANTE) ---
+// --- (¡NUEVO!) FORMULARIO DE RESEÑA ---
+@Composable
+fun AddReviewForm(
+    onAddReview: (Int, String) -> Unit
+) {
+    var rating by remember { mutableStateOf(0) }
+    var comentario by remember { mutableStateOf("") }
+    var showError by remember { mutableStateOf(false) }
 
-// NOTA: Esta función está duplicada de "ProductListScreen.kt".
-// Más adelante, un buen paso de "refactorización" (limpieza)
-// sería moverla a un nuevo archivo, por ejemplo:
-// "utils/Formatters.kt", para no repetirla.
+    Column(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text("Deja tu reseña:", style = MaterialTheme.typography.titleMedium)
 
+        // Input de Estrellas
+        StarRatingInput(
+            rating = rating,
+            onRatingChange = {
+                rating = it
+                showError = false // Oculta el error al cambiar
+            }
+        )
+
+        OutlinedTextField(
+            value = comentario,
+            onValueChange = { comentario = it },
+            label = { Text("Escribe tu comentario...") },
+            modifier = Modifier.fillMaxWidth(),
+            minLines = 3
+        )
+
+        // Muestra error si no se seleccionó calificación
+        if (showError) {
+            Text("Por favor, selecciona una calificación (1-5)", color = MaterialTheme.colorScheme.error)
+        }
+
+        Button(
+            onClick = {
+                if (rating > 0) { // Solo envía si hay calificación
+                    onAddReview(rating, comentario)
+                    // Resetea el formulario
+                    rating = 0
+                    comentario = ""
+                    showError = false
+                } else {
+                    showError = true // Muestra error
+                }
+            },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text("ENVIAR")
+        }
+    }
+}
+
+// --- (¡NUEVO!) LISTA DE RESEÑAS ---
+@Composable
+fun ReviewsList(reviews: List<Resena>) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        reviews.forEach { review ->
+            Card(elevation = CardDefaults.cardElevation(2.dp)) {
+                Column(Modifier.fillMaxWidth().padding(12.dp)) {
+                    Text(
+                        review.userName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    StarRatingDisplay(rating = review.calificacion.toFloat())
+                    Spacer(Modifier.height(4.dp))
+                    Text(review.comentario, style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+        }
+    }
+}
+
+// --- (¡NUEVO!) HELPER: INPUT DE ESTRELLAS ---
+@Composable
+fun StarRatingInput(
+    rating: Int,
+    onRatingChange: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(modifier = modifier) {
+        (1..5).forEach { index ->
+            Icon(
+                imageVector = if (index <= rating) Icons.Filled.Star else Icons.Filled.StarBorder,
+                contentDescription = "Estrella $index",
+                tint = LvlUpGreen,
+                modifier = Modifier
+                    .size(40.dp) // Estrellas más grandes
+                    .clickable { onRatingChange(index) }
+            )
+        }
+    }
+}
+
+// --- (¡NUEVO!) HELPER: MOSTRAR ESTRELLAS (PROMEDIO) ---
+@Composable
+fun StarRatingDisplay(
+    rating: Float,
+    modifier: Modifier = Modifier,
+    reviewCount: Int? = null // Opcional
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val fullStars = floor(rating).toInt()
+        val halfStar = ceil(rating) - floor(rating) > 0.4
+        val emptyStars = 5 - fullStars - (if (halfStar) 1 else 0)
+
+        // Estrellas llenas
+        repeat(fullStars) {
+            Icon(Icons.Filled.Star, contentDescription = null, tint = LvlUpGreen)
+        }
+        // Media estrella
+        if (halfStar) {
+            Icon(Icons.Filled.StarHalf, contentDescription = null, tint = LvlUpGreen)
+        }
+        // Estrellas vacías
+        repeat(emptyStars) {
+            Icon(Icons.Filled.StarBorder, contentDescription = null, tint = LvlUpGreen)
+        }
+
+        // (Opcional) Muestra el número de reseñas
+        if (reviewCount != null) {
+            Text(
+                " ($reviewCount)",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp)
+            )
+        }
+    }
+}
+
+// --- (HELPER DE PRECIO - SIN CAMBIOS) ---
 private fun formatPrice(price: Int): String {
     val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
     format.maximumFractionDigits = 0

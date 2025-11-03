@@ -1,22 +1,19 @@
 package com.example.levelupgamermobile.controller
 
-// Importamos el molde del producto
 import com.example.levelupgamermobile.model.Producto
 
 /**
- * Esta data class representa el "estado" completo de tu
- * pantalla de lista de productos.
+ * Estado actualizado para la pantalla de catálogo.
+ * (Se eliminó "userName").
  */
 data class ProductListUiState(
-    /**
-     * ¿Estamos cargando los productos?
-     * (Por ahora no lo usaremos, pero es vital para el login)
-     */
-    val isLoading: Boolean = false,
+    val isLoading: Boolean = true,
 
-    /**
-     * La lista de productos a mostrar.
-     * Por defecto, es una   lista vacía.
-     */
-    val productos: List<Producto> = emptyList()
+    // Filtros
+    val searchQuery: String = "",
+    val categoryFilter: String = "Todos",
+
+    // Listas
+    val allCategories: List<String> = emptyList(), // Para el menú desplegable
+    val filteredProducts: List<Producto> = emptyList() // La lista que se muestra
 )

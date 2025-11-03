@@ -93,10 +93,7 @@ fun HomeScreen(
                     onProductClick = { productId ->
                         mainNavController.navigate("product_detail/$productId")
                     },
-                    // ¡OJO! Le decimos que cambie a la PESTAÑA de Carrito
-                    onCartClick = {
-                        nestedNavController.navigate(BottomNavItem.Cart.route)
-                    }
+
                 )
             }
 

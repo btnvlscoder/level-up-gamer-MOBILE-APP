@@ -3,64 +3,91 @@ package com.example.levelupgamermobile.controller
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.levelupgamermobile.data.ProductRepository
+import com.example.levelupgamermobile.data.AuthRepository
 import com.example.levelupgamermobile.data.CartRepository
+import com.example.levelupgamermobile.data.ProductRepository
+import com.example.levelupgamermobile.model.Resena
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharingStarted // Import
+import kotlinx.coroutines.flow.stateIn // Import
 
 class ProductDetailViewModel(
-    // (1) SavedStateHandle
-    // Este objeto mágico nos lo da Android
-    // y sirve para leer los argumentos de navegación
-    // (en nuestro caso, el "productId" de la ruta).
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val repository = ProductRepository
+    // (1) Obtenemos todos los repositorios
+    private val productRepository = ProductRepository
     private val cartRepository = CartRepository
-    // (2) El Estado (igual que en el ViewModel de lista)
-    private val _uiState = MutableStateFlow(ProductDetailUiState())
-    val uiState: StateFlow<ProductDetailUiState> = _uiState.asStateFlow()
+    private val authRepository = AuthRepository
 
-    // (3) El ID del producto
-    // Leemos el argumento "productId" de la ruta.
     private val productId: String = checkNotNull(savedStateHandle["productId"])
 
-    /**
-     * (4) El bloque "init"
-     * Se ejecuta en cuanto se crea el ViewModel
-     */
-    init     {
-        // Lanzamos una corrutina (proceso en 2do plano)
-        // para ir a buscar el producto.
-        viewModelScope.launch {
-            // Le pedimos al repo que busque el producto por su código
-            val producto = repository.getProductoPorCodigo(productId)
+    // (2) Estado interno para el producto y el error
+    private val _producto = MutableStateFlow(ProductDetailUiState())
 
-            // Actualizamos el estado
-            _uiState.update {
+    // (3) El UiState se "combina"
+    val uiState: StateFlow<ProductDetailUiState> = combine(
+        _producto,
+        productRepository.getReviewsForProduct(productId)
+    ) { productoState, reviews ->
+
+        val avgRating = if (reviews.isNotEmpty()) {
+            reviews.map { it.calificacion }.average().toFloat()
+        } else {
+            0f
+        }
+
+        productoState.copy(
+            reviews = reviews,
+            averageRating = avgRating
+        )
+    }
+        // (4) ¡CORREGIDO! Usamos stateIn
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = _producto.value
+        )
+
+    init {
+        // Carga el producto (esto es igual que antes)
+        viewModelScope.launch {
+            val producto = productRepository.getProductoPorCodigo(productId)
+            _producto.update {
                 it.copy(
                     isLoading = false,
                     producto = producto,
-                    // Si el producto es null, ponemos un error
                     error = if (producto == null) "Producto no encontrado" else null
                 )
             }
         }
     }
 
+    // (6) Acción de Agregar al Carrito (sin cambios)
     fun addToCart() {
-        // Obtenemos el producto del estado actual
-        val producto = _uiState.value.producto
-
-        // Solo si el producto no es null, lo agregamos
+        val producto = _producto.value.producto
         if (producto != null) {
             cartRepository.addItem(producto)
-            // (En el futuro, aquí podríamos mostrar un
-            // mensaje de "¡Agregado con éxito!")
+        }
+    }
+
+    // (7) ¡NUEVA ACCIÓN! Añadir una reseña
+    fun addReview(calificacion: Int, comentario: String) {
+        viewModelScope.launch {
+            val userName = authRepository.userNameFlow.first() ?: "Anónimo"
+
+            productRepository.addReview(
+                productId = productId,
+                userName = userName,
+                calificacion = calificacion,
+                comentario = comentario
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.example.levelupgamermobile.view
 
+import androidx.compose.foundation.Image // ¡NUEVO! Importa Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size // ¡NUEVO! Importa size
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -23,15 +25,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color // ¡Importa Color!
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource // ¡NUEVO! Importa painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.levelupgamermobile.R // ¡NUEVO! Importa R para acceder a tus recursos
 import com.example.levelupgamermobile.controller.LoginViewModel
 
 /**
  * Pantalla "inteligente" de Login.
- * (Esta función no cambia)
  */
 @Composable
 fun LoginScreen(
@@ -58,7 +61,6 @@ fun LoginScreen(
 
 /**
  * Pantalla "tonta" (Dumb Composable) de Login.
- * ¡Aquí es donde ocurre la magia!
  */
 @Composable
 fun LoginContent(
@@ -68,7 +70,6 @@ fun LoginContent(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit
 ) {
-    // (1) ¡NUEVO! Usamos un Box para poder superponer elementos
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -81,13 +82,22 @@ fun LoginContent(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // V--- ¡NUEVO! Agregamos la imagen del logo aquí ---V
+                Image(
+                    painter = painterResource(id = R.drawable.logo), // Asegúrate que el nombre coincida con tu archivo
+                    contentDescription = "Level-Up Gamer Logo",
+                    modifier = Modifier
+                        .size(200.dp) // Ajusta el tamaño según necesites
+                        .padding(bottom = 32.dp)
+                )
+                // ^--- FIN DEL LOGO ---^
+
                 Text(
                     "Iniciar Sesión",
                     style = MaterialTheme.typography.headlineLarge
                 )
                 Spacer(Modifier.height(32.dp))
 
-                // --- Campos de Texto (Sin cambios) ---
                 OutlinedTextField(
                     value = uiState.email,
                     onValueChange = onEmailChange,
@@ -108,17 +118,14 @@ fun LoginContent(
                 )
                 Spacer(Modifier.height(24.dp))
 
-                // (2) ¡CAMBIO! El botón ya no desaparece
                 Button(
                     onClick = onLoginClick,
                     modifier = Modifier.fillMaxWidth(),
-                    // El botón se deshabilita si está cargando O si los campos están vacíos
                     enabled = !uiState.isLoading && uiState.email.isNotBlank() && uiState.pass.isNotBlank()
                 ) {
                     Text("INGRESAR")
                 }
 
-                // --- Error y Botón de Registro (Sin cambios) ---
                 if (uiState.error != null) {
                     Spacer(Modifier.height(16.dp))
                     Text(
@@ -133,13 +140,9 @@ fun LoginContent(
             }
         }
 
-        // (3) ¡NUEVO! El Overlay de Carga
-        // Si uiState.isLoading es true, esta sección se dibujará
-        // ENCIMA del Scaffold.
         if (uiState.isLoading) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
-                // Un color negro semi-transparente para el fondo
                 color = Color.Black.copy(alpha = 0.5f)
             ) {
                 Box(contentAlignment = Alignment.Center) {

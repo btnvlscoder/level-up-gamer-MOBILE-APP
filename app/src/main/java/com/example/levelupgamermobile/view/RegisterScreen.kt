@@ -1,18 +1,49 @@
 package com.example.levelupgamermobile.view
 
-// ... (imports de layout)
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.* // Importa todo Material 3
-import androidx.compose.runtime.* // Importa remember, etc.
-// ... (imports de UI y ViewModel)
-import com.example.levelupgamermobile.controller.RegisterViewModel
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.RegisterUiState
-import kotlinx.coroutines.launch // ¡Importa launch!
+import com.example.levelupgamermobile.controller.RegisterViewModel
+import kotlinx.coroutines.launch
 
 /**
  * Pantalla "inteligente" de Registro.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterScreen(
     viewModel: RegisterViewModel = viewModel(),
@@ -21,27 +52,30 @@ fun RegisterScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // (1) ¡NUEVO! Necesitamos un "SnackbarHostState" para mostrar el mensaje
+    // (1) Necesitamos un "SnackbarHostState" para mostrar el mensaje
     val snackbarHostState = remember { SnackbarHostState() }
-    // (2) ¡NUEVO! Necesitamos un "CoroutineScope" para lanzar el snackbar
+    // (2) Necesitamos un "CoroutineScope" para lanzar el snackbar
     val scope = rememberCoroutineScope()
 
     // (3) LaunchedEffect para el éxito del registro
     LaunchedEffect(key1 = uiState.registerSuccess) {
         if (uiState.registerSuccess) {
-            // ¡Mostramos el mensaje!
+
+            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
             scope.launch {
+                // (A) Primero, muestra el mensaje Y ESPERA
                 snackbarHostState.showSnackbar(
                     message = "¡Registrado correctamente!",
                     duration = SnackbarDuration.Short
                 )
+                // (B) DESPUÉS de que el snackbar termine, navega
+                onRegisterSuccess()
             }
-            // Navegamos
-            onRegisterSuccess()
+            // --- FIN DE LA CORRECCIÓN ---
         }
     }
 
-    // (4) ¡NUEVO! Movemos el Scaffold aquí, a la pantalla "inteligente"
+    // (4) Movemos el Scaffold aquí, a la pantalla "inteligente"
     // para que pueda controlar el SnackbarHost.
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -56,8 +90,6 @@ fun RegisterScreen(
             )
         }
     ) { paddingValues ->
-
-        // --- El resto del código es casi igual ---
 
         var email by remember { mutableStateOf("") }
         var pass by remember { mutableStateOf("") }
@@ -89,19 +121,16 @@ fun RegisterScreen(
                     email, pass, confirmPass, rut, nombre, apellidoP, apellidoM
                 )
             }
-            // onBackClick ya no se necesita aquí, lo maneja el TopAppBar
         )
     }
 }
 
 /**
  * Pantalla "tonta" (Dumb Composable) de Registro.
- * (5) ¡CAMBIO! Esta ya no necesita un Scaffold.
- * Solo es el formulario (el LazyColumn).
  */
 @Composable
 fun RegisterContent(
-    paddingValues: androidx.compose.foundation.layout.PaddingValues, // ¡Recibe el padding!
+    paddingValues: PaddingValues, // ¡Recibe el padding!
     uiState: RegisterUiState,
     email: String, onEmailChange: (String) -> Unit,
     pass: String, onPassChange: (String) -> Unit,
