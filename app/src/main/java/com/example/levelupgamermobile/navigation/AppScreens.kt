@@ -1,21 +1,25 @@
 package com.example.levelupgamermobile.navigation
 
 /**
- * Usamos "object" (Singleton) para guardar nuestras rutas
- * como constantes. Es más seguro que escribir "list" o "detail"
- * a mano en todos lados.
+ * Define las rutas de navegación "principales"
+ * (las que maneja MainActivity).
+ *
+ * PRODUCT_LIST y CART ya no están aquí porque ahora son
+ * rutas "internas" manejadas por HomeScreen.
  */
 object AppScreens {
+
+    // Flujo de Autenticación
     const val LOGIN = "login"
     const val REGISTER = "register"
-    const val PRODUCT_LIST = "product_list"
-    // Esta es una ruta "dinámica".
-    // "{productId}" significa que esperamos un argumento
-    // que se llamará "productId".
+
+    // Flujo Principal de la App (el contenedor)
+    const val HOME = "home"
+
+    // Pantalla de "encima" (se muestra sobre HOME)
     const val PRODUCT_DETAIL = "product_detail/{productId}"
-    const val CART = "cart"
-    // Esta es una función "helper" (ayudante)
-    // para construir la ruta de detalle fácilmente.
+
+    // Función helper (ayudante)
     fun productDetail(productId: String): String {
         return "product_detail/$productId"
     }

@@ -16,12 +16,12 @@ class RegisterViewModel : ViewModel() {
     private val authRepository = AuthRepository
 
     // (1) El Estado (STATE)
-    // Nota: Ya NO necesitamos guardar los campos (email, rut, etc.) aquí.
-    // Solo necesitamos saber el estado de la UI (carga, error, éxito).
+    // Usa el "RegisterUiState" correcto
     private val _uiState = MutableStateFlow(RegisterUiState())
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
-    // Ahora "doRegister" SÍ acepta los parámetros de la Vista.
+    // (2) Acción de Registro
+    // Acepta los parámetros que le envía la Vista
     fun doRegister(
         email: String,
         pass: String,
@@ -33,7 +33,7 @@ class RegisterViewModel : ViewModel() {
     ) {
         if (_uiState.value.isLoading) return
 
-        // (3) Validación (Minucioso)
+        // (3) Validación
         if (pass != confirmPass) {
             _uiState.update { it.copy(error = "Las contraseñas no coinciden") }
             return
@@ -43,7 +43,7 @@ class RegisterViewModel : ViewModel() {
             return
         }
 
-        // (4) Ponemos el estado de "Cargando"
+        // (4) Estado de "Cargando"
         _uiState.update { it.copy(isLoading = true, error = null) }
 
         // Creamos el DTO para enviar al backend

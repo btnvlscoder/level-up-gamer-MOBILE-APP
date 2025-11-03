@@ -33,7 +33,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.RegisterViewModel
-import com.example.levelupgamermobile.controller.RegisterUiState
+import com.example.levelupgamermobile.controller.RegisterUiState // ¡Importa el UiState correcto!
+
 /**
  * Pantalla "inteligente" de Registro.
  */
@@ -43,19 +44,17 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    // (1) Observa el RegisterUiState
     val uiState by viewModel.uiState.collectAsState()
 
-    // (1) LaunchedEffect para el éxito del registro
+    // (2) Reacciona al éxito del registro
     LaunchedEffect(key1 = uiState.registerSuccess) {
         if (uiState.registerSuccess) {
             onRegisterSuccess()
         }
     }
 
-    // (2) Estado local para los campos
-    // A diferencia del Login, son tantos campos que es más
-    // eficiente que la UI los recuerde y solo
-    // se los pase al ViewModel al hacer clic.
+    // (3) Estado local para los campos (propiedad de la Vista)
     var email by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
     var confirmPass by remember { mutableStateOf("") }
@@ -64,9 +63,9 @@ fun RegisterScreen(
     var apellidoP by remember { mutableStateOf("") }
     var apellidoM by remember { mutableStateOf("") }
 
-    // (3) Llamamos a la UI "tonta"
+    // (4) Llama a la UI "tonta"
     RegisterContent(
-        uiState = uiState,
+        uiState = uiState, // Le pasa el estado del ViewModel
         email = email,
         onEmailChange = { email = it },
         pass = pass,
@@ -82,7 +81,7 @@ fun RegisterScreen(
         apellidoM = apellidoM,
         onApellidoMChange = { apellidoM = it },
         onRegisterClick = {
-            // Al hacer clic, le pasamos TODOS los datos al ViewModel
+            // (5) Llama al ViewModel con los datos de la Vista
             viewModel.doRegister(
                 email, pass, confirmPass, rut, nombre, apellidoP, apellidoM
             )
@@ -93,13 +92,11 @@ fun RegisterScreen(
 
 /**
  * Pantalla "tonta" (Dumb Composable) de Registro.
- * (Esta es la versión que usa el ViewModel que definimos,
- * que valida las contraseñas y campos vacíos).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegisterContent(
-    uiState: RegisterUiState,
+    uiState: RegisterUiState, // (6) Espera un RegisterUiState
     email: String, onEmailChange: (String) -> Unit,
     pass: String, onPassChange: (String) -> Unit,
     confirmPass: String, onConfirmPassChange: (String) -> Unit,
@@ -122,7 +119,6 @@ fun RegisterContent(
             )
         }
     ) { paddingValues ->
-        // Usamos LazyColumn para que sea "scrollable"
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -140,76 +136,21 @@ fun RegisterContent(
                     label = { Text("RUT (sin puntos ni guion)") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    isError = uiState.error != null
+                    isError = uiState.error != null // (7) Lee el error del UiState
                 )
             }
-            item {
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = onNombreChange,
-                    label = { Text("Nombre") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = uiState.error != null
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = apellidoP,
-                    onValueChange = onApellidoPChange,
-                    label = { Text("Apellido Paterno") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = uiState.error != null
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = apellidoM,
-                    onValueChange = onApellidoMChange,
-                    label = { Text("Apellido Materno") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = uiState.error != null
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = onEmailChange,
-                    label = { Text("Email") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    isError = uiState.error != null
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = pass,
-                    onValueChange = onPassChange,
-                    label = { Text("Contraseña") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    isError = uiState.error != null
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = confirmPass,
-                    onValueChange = onConfirmPassChange,
-                    label = { Text("Confirmar Contraseña") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    isError = uiState.error != null
-                )
-            }
+            // (Todos los demás OutlinedTextField...)
+            item { OutlinedTextField(value = nombre, onValueChange = onNombreChange, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+            item { OutlinedTextField(value = apellidoP, onValueChange = onApellidoPChange, label = { Text("Apellido Paterno") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+            item { OutlinedTextField(value = apellidoM, onValueChange = onApellidoMChange, label = { Text("Apellido Materno") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+            item { OutlinedTextField(value = email, onValueChange = onEmailChange, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+            item { OutlinedTextField(value = pass, onValueChange = onPassChange, label = { Text("Contraseña") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), isError = uiState.error != null) }
+            item { OutlinedTextField(value = confirmPass, onValueChange = onConfirmPassChange, label = { Text("Confirmar Contraseña") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), isError = uiState.error != null) }
 
             // --- Botón de Registro o Carga ---
             item {
                 Spacer(Modifier.height(16.dp))
-                if (uiState.isLoading) {
+                if (uiState.isLoading) { // (8) Lee isLoading del UiState
                     CircularProgressIndicator()
                 } else {
                     Button(
@@ -222,7 +163,7 @@ fun RegisterContent(
             }
 
             // --- Mensaje de Error ---
-            if (uiState.error != null) {
+            if (uiState.error != null) { // (9) Lee el error del UiState
                 item {
                     Text(
                         text = uiState.error,

@@ -25,7 +25,8 @@ object AuthRepository {
     // (2) Exponemos el "flujo" de email para que el resto de la app
     // sepa si el usuario está logueado o no.
     val userEmailFlow: Flow<String?> = sessionManager.userEmailFlow
-
+    val userNameFlow: Flow<String?> = sessionManager.userNameFlow
+    val userRutFlow: Flow<String?> = sessionManager.userRutFlow
     /**
      * Intenta iniciar sesión en el backend.
      */

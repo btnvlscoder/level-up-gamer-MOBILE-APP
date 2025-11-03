@@ -9,7 +9,7 @@ lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
 composeBom = "2024.09.00"
 navigationCompose = "2.9.5"
-
+splashscreen = "1.0.1"
 datastore = "1.1.1"           # <-- NUEVA: Para guardar la sesión
 retrofit = "2.11.0"           # <-- NUEVA: Para la red
 okhttp = "4.12.0"             # <-- NUEVA: Para la red
@@ -33,6 +33,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-compose-material-icons = { group = "androidx.compose.material", name = "material-icons-extended" }
 
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 
 # --- Para la Red (Backend) ---

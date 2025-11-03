@@ -15,7 +15,7 @@
 
         android:usesCleartextTraffic="true"
 
-        android:theme="@style/Theme.LevelUpGamerMobile"
+        android:theme="@style/Theme.App.Starting"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"

@@ -55,9 +55,16 @@ class SessionManager(private val context: Context) {
             preferences[USER_EMAIL_KEY]
         }
 
-    /**
-     * Borra todos los datos de la sesión (para el Logout).
-     */
+    val userNameFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[USER_NAME_KEY]
+        }
+
+    val userRutFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[USER_RUT_KEY]
+        }
+
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
             preferences.clear()
