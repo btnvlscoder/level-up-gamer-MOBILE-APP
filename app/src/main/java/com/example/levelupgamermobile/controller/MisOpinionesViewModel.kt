@@ -5,40 +5,47 @@ import androidx.lifecycle.viewModelScope
 import com.example.levelupgamermobile.data.AuthRepository
 import com.example.levelupgamermobile.data.ProductRepository
 import com.example.levelupgamermobile.model.Resena
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-aimport kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.stateIn
 
 class MisOpinionesViewModel : ViewModel() {
 
     private val authRepository = AuthRepository
     private val productRepository = ProductRepository
 
-    // (1) Creamos un StateFlow privado para el estado
-    private val _uiState = MutableStateFlow(MisOpinionesUiState())
-    val uiState: StateFlow<MisOpinionesUiState> = _uiState.asStateFlow()
+    // (1) Combinamos el email del usuario Y la lista de TODAS las reseñas
+    val uiState: StateFlow<MisOpinionesUiState> = combine(
+        authRepository.userEmailFlow,
+        productRepository.allReviews
+        // Especificamos los tipos explícitamente para ayudar al compilador.
+    ) { userEmail: String?, allReviews: List<Resena> ->
 
-    init {
-        // (2) "Escuchamos" a los dos repositorios
-        viewModelScope.launch {
-            combine(
-                authRepository.userEmailFlow, // El email del usuario logueado
-                productRepository.allReviewsFlow  // El flujo de TODAS las reseñas
-            ) { userEmail, allReviews ->
-                // (3) Filtramos las reseñas
-                val misResenas = if (userEmail != null) {
-                    allReviews.filter { it.userEmail == userEmail }
-                } else {
-                    emptyList()
-                }
-                // (4) Devolvemos el nuevo estado
-                MisOpinionesUiState(isLoading = false, misResenas = misResenas)
-            }.collect {
-                // (5) Actualizamos nuestro StateFlow
-                _uiState.value = it
-            }
+        if (userEmail == null) {
+            // Si no hay usuario, no hay opiniones
+            return@combine MisOpinionesUiState(isLoading = false, opiniones = emptyList())
         }
-    }
+
+        // (2) Filtramos las reseñas que sean del usuario actual
+        val misResenas = allReviews.filter { it.userEmail == userEmail }
+
+        // (3) Para cada reseña, buscamos los datos del producto
+        val opinionesConProducto = misResenas.map { resena ->
+            val producto = productRepository.getProductoPorCodigo(resena.productId)
+            // Creamos un "Par" (Reseña, Producto)
+            Pair(resena, producto)
+        }
+
+        // (4) Emitimos el estado final
+        MisOpinionesUiState(
+            isLoading = false,
+            opiniones = opinionesConProducto
+        )
+
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = MisOpinionesUiState() // Estado inicial (cargando)
+    )
 }

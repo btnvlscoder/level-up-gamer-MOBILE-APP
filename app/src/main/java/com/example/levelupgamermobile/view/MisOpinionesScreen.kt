@@ -1,31 +1,47 @@
 package com.example.levelupgamermobile.view
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.levelupgamermobile.R
 import com.example.levelupgamermobile.controller.MisOpinionesUiState
 import com.example.levelupgamermobile.controller.MisOpinionesViewModel
+import com.example.levelupgamermobile.model.Producto
 import com.example.levelupgamermobile.model.Resena
 
+/**
+ * Pantalla "inteligente" que muestra las reseñas del usuario.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MisOpinionesScreen(
@@ -46,46 +62,63 @@ fun MisOpinionesScreen(
             )
         }
     ) { paddingValues ->
-        if (uiState.isLoading) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-        } else if (uiState.misResenas.isEmpty()) {
-            Box(Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                Text("Aún no has dejado ninguna opinión.")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(uiState.misResenas) { resena ->
-                    MiOpinionItem(resena = resena)
-                }
+        // (1) Mostramos la lista de opiniones
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(uiState.opiniones, key = { it.first.id }) { (reseña, producto) ->
+                OpinionItem(reseña = reseña, producto = producto)
             }
         }
     }
 }
 
-// (Composable para una fila de reseña)
+/**
+ * Un Composable para mostrar una sola opinión.
+ */
 @Composable
-private fun MiOpinionItem(resena: Resena) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(2.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            // (Podríamos añadir el nombre del producto aquí)
-            StarRatingDisplay(rating = resena.calificacion.toFloat())
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = resena.comentario,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
+private fun OpinionItem(reseña: Resena, producto: Producto?) {
+    Card(elevation = CardDefaults.cardElevation(2.dp)) {
+        Column(Modifier.fillMaxWidth()) {
+            // (2) Mostramos la info del producto (si existe)
+            if (producto != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                ) {
+                    Image(
+                        painter = painterResource(id = producto.imagenes.firstOrNull() ?: R.drawable.logo),
+                        contentDescription = producto.nombre,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(60.dp)
+                    )
+                    Text(
+                        text = producto.nombre,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 12.dp)
+                    )
+                }
+            }
+
+            // (3) Mostramos la reseña del usuario
+            Column(Modifier.padding(12.dp)) {
+                StarRatingDisplay(rating = reseña.calificacion.toFloat())
+                Spacer(Modifier.height(4.dp))
+                if (reseña.comentario.isNotBlank()) {
+                    Text(
+                        text = reseña.comentario,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+            }
         }
     }
 }

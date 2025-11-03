@@ -52,13 +52,15 @@ import java.util.Locale
 @Composable
 fun CartScreen(
     viewModel: CartViewModel = viewModel(),
-    onBackPress: () -> Unit
+    onBackPress: () -> Unit,
+    onComprarClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     CartScreenContent(
         uiState = uiState,
         onBackPress = onBackPress,
+        onComprarClick = onComprarClick,
         onIncrease = { viewModel.increaseQuantity(it) },
         onDecrease = { viewModel.decreaseQuantity(it) },
         onRemove = { viewModel.removeItem(it) }
@@ -73,6 +75,7 @@ fun CartScreen(
 fun CartScreenContent(
     uiState: CartUiState,
     onBackPress: () -> Unit,
+    onComprarClick: () -> Unit,
     onIncrease: (String) -> Unit,
     onDecrease: (String) -> Unit,
     onRemove: (String) -> Unit
@@ -83,7 +86,6 @@ fun CartScreenContent(
                 title = { Text("Carrito de Compras") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
-                        // --- CORRECCIÓN AQUÍ ---
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Volver"
@@ -115,7 +117,7 @@ fun CartScreenContent(
                     }
                     Spacer(Modifier.height(16.dp))
                     Button(
-                        onClick = { /* TODO: Lógica de Compra */ },
+                        onClick = onComprarClick,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("COMPRAR AHORA")

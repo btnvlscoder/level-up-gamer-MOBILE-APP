@@ -4,40 +4,47 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material3.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.levelupgamermobile.ui.theme.LvlUpGreen
 
-// (1) Molde de datos local (solo para esta maqueta)
-private data class Ticket(
+// (1) Creamos datos de ejemplo solo para la maqueta
+private data class FakeTicket(
     val id: String,
     val asunto: String,
     val estado: String,
     val colorEstado: Color
 )
 
-// (2) Lista de datos falsos
 private val fakeTickets = listOf(
-    Ticket("T-1005", "No me llegan los productos", "Resuelto", Color.Green),
-    Ticket("T-1004", "Problema con el pago", "Resuelto", Color.Green),
-    Ticket("T-1003", "Contraseña olvidada", "En Progreso", Color.Yellow),
-    Ticket("T-1002", "Quiero cancelar mi compra", "Cerrado", Color.Gray)
+    FakeTicket("T-12345", "Problema con mi compra", "Abierto", LvlUpGreen),
+    FakeTicket("T-12342", "Reseña no aparece", "Cerrado", Color.Gray),
+    FakeTicket("T-12340", "Consulta sobre garantía", "Cerrado", Color.Gray)
 )
 
+/**
+ * Pantalla de Maqueta para "Mis Tickets"
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MisTicketsScreen(
@@ -46,7 +53,7 @@ fun MisTicketsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis Tickets de Soporte") },
+                title = { Text("Mis Tickets") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
                         Icon(Icons.Filled.ArrowBack, "Volver")
@@ -55,6 +62,7 @@ fun MisTicketsScreen(
             )
         }
     ) { paddingValues ->
+        // (2) Mostramos la lista de tickets falsos
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -69,38 +77,40 @@ fun MisTicketsScreen(
     }
 }
 
-// (3) Composable para una fila de Ticket
+/**
+ * Un Composable para mostrar un solo ticket de maqueta
+ */
 @Composable
-private fun TicketItem(ticket: Ticket) {
+private fun TicketItem(ticket: FakeTicket) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(2.dp)
+        elevation = CardDefaults.cardElevation(2.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Ticket #${ticket.id}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = ticket.asunto,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(Modifier.height(8.dp))
-            Row {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = "Estado",
-                    tint = ticket.colorEstado
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = ticket.id,
+                    style = MaterialTheme.typography.labelMedium
                 )
                 Text(
-                    text = ticket.estado,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = ticket.colorEstado,
-                    modifier = Modifier.padding(start = 8.dp)
+                    text = ticket.asunto,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
                 )
             }
+            Text(
+                text = ticket.estado.uppercase(),
+                style = MaterialTheme.typography.bodySmall,
+                color = ticket.colorEstado,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp)
+            )
         }
     }
 }

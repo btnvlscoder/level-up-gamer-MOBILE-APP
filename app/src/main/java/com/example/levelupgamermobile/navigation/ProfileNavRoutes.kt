@@ -9,8 +9,8 @@ object ProfileNavRoutes {
     const val INFO_PERSONAL = "info_personal"
     const val MIS_COMPRAS = "mis_compras"
     const val MIS_OPINIONES = "mis_opiniones"
+    const val MIS_TICKETS = "mis_tickets"
+    const val SOPORTE = "soporte"
     const val TERMINOS = "terminos"
     const val ACERCA_DE = "acerca_de"
-    const val SOPORTE = "soporte"
-    const val MIS_TICKETS = "mis_tickets" //
 }

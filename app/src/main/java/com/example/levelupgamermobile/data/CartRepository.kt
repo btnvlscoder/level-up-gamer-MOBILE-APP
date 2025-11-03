@@ -92,4 +92,8 @@ object CartRepository {
             }
         }
     }
+
+    fun clearCart() {
+        _cartItems.update { emptyList() }
+    }
 }

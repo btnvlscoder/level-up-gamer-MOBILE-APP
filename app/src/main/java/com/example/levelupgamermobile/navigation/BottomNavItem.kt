@@ -7,34 +7,28 @@ import androidx.compose.material.icons.filled.Store
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
- * Esta es una "clase sellada" (sealed class).
- * Es como un "enum" (enumeración) pero más potente.
- * La usamos para definir una lista fija de nuestras
- * pestañas de navegación.
+ * Define las 3 pestañas principales de la barra de navegación.
  */
 sealed class BottomNavItem(
     val title: String,
     val icon: ImageVector,
-    val route: String
+    val route: String // La ruta "raíz" de esta pestaña
 ) {
-    // Pestaña 1: Tienda
     object Store : BottomNavItem(
         title = "Tienda",
         icon = Icons.Filled.Store,
-        route = "store" // Esta es una ruta interna
+        route = "store_tab" // Cambiado para ser único
     )
 
-    // Pestaña 2: Carrito
     object Cart : BottomNavItem(
         title = "Carrito",
         icon = Icons.Filled.ShoppingCart,
-        route = "cart" // Esta ruta coincide con la de AppScreens
+        route = "cart_tab" // Cambiado para ser único
     )
 
-    // Pestaña 3: Perfil
     object Profile : BottomNavItem(
         title = "Perfil",
         icon = Icons.Filled.Person,
-        route = "profile" // Ruta interna
+        route = "profile_tab" // Cambiado para ser único
     )
 }
