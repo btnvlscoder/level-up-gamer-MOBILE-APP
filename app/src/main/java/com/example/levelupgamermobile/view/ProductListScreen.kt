@@ -1,5 +1,10 @@
 package com.example.levelupgamermobile.view
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -29,29 +34,32 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.ProductListUiState
-import com.example.levelupgamermobile.controller.ProductViewModel
+import com.example.levelupgamermobile.controller.ProductListViewModel
 import com.example.levelupgamermobile.model.Producto
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.foundation.clickable
 
 /**
  * Esta es la función "inteligente" (Smart Composable).
  * Su única responsabilidad es obtener el ViewModel y
  * observar el estado (uiState).
  */
+// ... (imports) ...
+
 @Composable
 fun ProductListScreen(
-    // pro-tip: viewModel() es una función que automáticamente
-    // te da la instancia correcta del ViewModel.
-    viewModel: ProductViewModel = viewModel()
+    viewModel: ProductListViewModel = viewModel(),
+    onProductClick: (String) -> Unit,
+    onCartClick: () -> Unit
 ) {
-    // Observamos el estado.
-    // "by" es un truco de Kotlin para tratar el estado
-    // como si fuera una variable normal.
     val uiState by viewModel.uiState.collectAsState()
 
-    // Le pasamos el estado a la pantalla "tonta"
-    ProductList(uiState = uiState)
+    ProductList(
+        uiState = uiState,
+        onProductClick = onProductClick,
+        onCartClick = onCartClick// <-- PÁSALO A LA FUNCIÓN "TONTA"
+    )
 }
 
 /**
@@ -61,15 +69,30 @@ fun ProductListScreen(
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProductList(uiState: ProductListUiState) {
+fun ProductList(
+    uiState: ProductListUiState,
+    onProductClick: (String) -> Unit,
+    onCartClick: () -> Unit
+) {
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Level-Up Gamer") })
+            TopAppBar(
+                title = { Text("Level-Up Gamer") },
+                actions = {
+                    IconButton(onClick = onCartClick) {
+                        Icon(
+                            imageVector = Icons.Default.ShoppingCart,
+                            contentDescription = "Ir al carrito"
+                        )
+                    }
+                }
+            )
         }
     ) { paddingValues ->
-        // LazyVerticalGrid es el equivalente a tu "contenedor-productos".
-        // Es una grilla que "perezosamente" carga solo los items
-        // que se ven en pantalla. Es muy eficiente.
+            // LazyVerticalGrid es el equivalente a tu "contenedor-productos".
+            // Es una grilla que "perezosamente" carga solo los items
+            // que se ven en pantalla. Es muy eficiente.
         LazyVerticalGrid(
             columns = GridCells.Fixed(2), // 2 columnas
             modifier = Modifier
@@ -81,8 +104,10 @@ fun ProductList(uiState: ProductListUiState) {
         ) {
             // "items" es un bucle que recorre la lista de productos
             items(uiState.productos, key = { it.codigo }) { producto ->
-                // Por cada producto en la lista, dibuja un ProductItem
-                ProductItem(producto = producto)
+                ProductItem(
+                    producto = producto,
+                    onClick = { onProductClick(producto.codigo) }
+                )
             }
         }
     }
@@ -93,9 +118,13 @@ fun ProductList(uiState: ProductListUiState) {
  * (Equivalente a tu div "producto" en HTML).
  */
 @Composable
-fun ProductItem(producto: Producto) {
+fun ProductItem(
+    producto: Producto,
+    onClick: () -> Unit
+) {
     Card(
         // modifier = Modifier.clickable { } // (Aquí irá la navegación al detalle)
+        onClick = onClick,
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column {
