@@ -12,29 +12,25 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
-class InfoPersonalViewModel : ViewModel() { // <-- ¡NOMBRE CAMBIADO!
+class InfoPersonalViewModel : ViewModel() {
 
     private val authRepository = AuthRepository
 
-    // (1) Flujos de datos
+    // (1) Flujos (sin _rutFlow)
     private val _emailFlow = authRepository.userEmailFlow
     private val _nombreFlow = authRepository.userNameFlow
     private val _apellidoPFlow = authRepository.userApellidoPFlow
-    private val _rutFlow = authRepository.userRutFlow
 
     private val _logoutState = MutableStateFlow(false)
 
-    // (2) Combinamos los 4 flujos de datos
+    // (2) Combine (sin rut)
     private val _userDataFlow = combine(
-        _emailFlow, _nombreFlow, _apellidoPFlow, _rutFlow
-    ) { email, nombre, apellidoP, rut ->
-        UserData(email, nombre, apellidoP, rut)
+        _emailFlow, _nombreFlow, _apellidoPFlow
+    ) { email, nombre, apellidoP ->
+        UserData(email, nombre, apellidoP)
     }
 
-    /**
-     * (3) Combinamos los datos del usuario + estado de logout
-     */
-    val uiState: StateFlow<InfoPersonalUiState> = combine( // <-- ¡UiState CAMBIADO!
+    val uiState: StateFlow<InfoPersonalUiState> = combine(
         _userDataFlow,
         _logoutState
     ) { userData, logoutComplete ->
@@ -45,17 +41,17 @@ class InfoPersonalViewModel : ViewModel() { // <-- ¡NOMBRE CAMBIADO!
             "Cargando..."
         }
 
-        InfoPersonalUiState( // <-- ¡UiState CAMBIADO!
+        InfoPersonalUiState(
             nombreCompleto = nombreCompleto,
             email = userData.email ?: "...",
-            rut = userData.rut ?: "...",
+            // rut = userData.rut ?: "...", // <-- ELIMINADO
             isLoading = false,
             logoutComplete = logoutComplete
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = InfoPersonalUiState() // <-- ¡UiState CAMBIADO!
+        initialValue = InfoPersonalUiState()
     )
 
     fun logout() {
@@ -66,12 +62,10 @@ class InfoPersonalViewModel : ViewModel() { // <-- ¡NOMBRE CAMBIADO!
     }
 }
 
-/**
- * Data class privada para la combinación
- */
+// (3) Data class privada (sin rut)
 private data class UserData(
     val email: String?,
     val nombre: String?,
-    val apellidoP: String?,
-    val rut: String?
+    val apellidoP: String?
+    // val rut: String? // <-- ELIMINADO
 )

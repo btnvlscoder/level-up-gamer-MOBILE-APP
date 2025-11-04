@@ -44,7 +44,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,10 +58,18 @@ import java.text.NumberFormat
 import java.util.Locale
 import kotlin.math.ceil
 import kotlin.math.floor
+import androidx.compose.material3.SnackbarHost // ¡NUEVO!
+import androidx.compose.material3.SnackbarHostState // ¡NUEVO!
+import androidx.compose.runtime.LaunchedEffect // ¡NUEVO!
+import androidx.compose.runtime.remember // ¡NUEVO!
+import androidx.compose.runtime.rememberCoroutineScope // ¡NUEVO!
+import kotlinx.coroutines.flow.collectLatest // ¡NUEVO!
+import kotlinx.coroutines.launch // ¡NUEVO!
 
 /**
  * Pantalla "inteligente" (Smart Composable).
  */
+@OptIn(ExperimentalMaterial3Api::class) // ¡NUEVO! Mover OptIn aquí
 @Composable
 fun ProductDetailScreen(
     viewModel: ProductDetailViewModel = viewModel(),
@@ -70,28 +77,23 @@ fun ProductDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    ProductDetailContent(
-        uiState = uiState,
-        onBackPress = onBackPress,
-        onAddToCartClick = { viewModel.addToCart() },
-        onAddReview = { calificacion, comentario ->
-            viewModel.addReview(calificacion, comentario)
-        }
-    )
-}
+    // (1) ¡NUEVO! Configuración del Snackbar
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-/**
- * Composable "tonto" que solo dibuja la UI.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProductDetailContent(
-    uiState: ProductDetailUiState,
-    onBackPress: () -> Unit,
-    onAddToCartClick: () -> Unit,
-    onAddReview: (Int, String) -> Unit
-) {
+    // (2) ¡NUEVO! "Escucha" los mensajes del ViewModel
+    LaunchedEffect(key1 = Unit) {
+        viewModel.snackbarMessage.collectLatest { message ->
+            scope.launch {
+                snackbarHostState.showSnackbar(message)
+            }
+        }
+    }
+
+    // (3) ¡CAMBIO!
+    // Movemos el Scaffold aquí para que controle el Snackbar
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) }, // ¡NUEVO!
         topBar = {
             TopAppBar(
                 title = { Text("Detalle del Producto") },
@@ -106,29 +108,50 @@ fun ProductDetailContent(
             )
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.Center
-        ) {
-            when {
-                uiState.isLoading -> { CircularProgressIndicator() }
-                uiState.error != null -> {
-                    Text(
-                        text = uiState.error,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                uiState.producto != null -> {
-                    ProductDetails(
-                        producto = uiState.producto,
-                        reviews = uiState.reviews,
-                        averageRating = uiState.averageRating,
-                        onAddToCartClick = onAddToCartClick,
-                        onAddReview = onAddReview
-                    )
-                }
+        ProductDetailContent(
+            paddingValues = paddingValues, // ¡NUEVO! Pasa el padding
+            uiState = uiState,
+            onAddToCartClick = { viewModel.addToCart() },
+            onAddReview = { calificacion, comentario ->
+                viewModel.addReview(calificacion, comentario)
+            }
+        )
+    }
+}
+
+/**
+ * Composable "tonto" que solo dibuja la UI.
+ */
+@Composable
+fun ProductDetailContent(
+    paddingValues: PaddingValues, // ¡NUEVO! Recibe el padding
+    uiState: ProductDetailUiState,
+    onAddToCartClick: () -> Unit,
+    onAddReview: (Int, String) -> Unit
+) {
+    // (4) ¡CAMBIO! El Scaffold se fue
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues), // ¡Aplica el padding!
+        contentAlignment = Alignment.Center
+    ) {
+        when {
+            uiState.isLoading -> { CircularProgressIndicator() }
+            uiState.error != null -> {
+                Text(
+                    text = uiState.error,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            uiState.producto != null -> {
+                ProductDetails(
+                    producto = uiState.producto,
+                    reviews = uiState.reviews,
+                    averageRating = uiState.averageRating,
+                    onAddToCartClick = onAddToCartClick,
+                    onAddReview = onAddReview
+                )
             }
         }
     }

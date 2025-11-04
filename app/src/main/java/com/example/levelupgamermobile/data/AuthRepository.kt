@@ -19,7 +19,6 @@ object AuthRepository {
     // (1) ¡NUEVO! Exponemos TODOS los flujos de datos
     val userEmailFlow: Flow<String?> = sessionManager.userEmailFlow
     val userNameFlow: Flow<String?> = sessionManager.userNameFlow
-    val userRutFlow: Flow<String?> = sessionManager.userRutFlow
     val userApellidoPFlow: Flow<String?> = sessionManager.userApellidoPFlow
     val userRolFlow: Flow<String?> = sessionManager.userRolFlow
 

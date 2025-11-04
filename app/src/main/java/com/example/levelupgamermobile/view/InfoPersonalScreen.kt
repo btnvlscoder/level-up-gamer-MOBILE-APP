@@ -145,11 +145,6 @@ fun InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
                             label = "Email",
                             value = uiState.email
                         )
-                        InfoCard(
-                            icon = Icons.Filled.Person,
-                            label = "RUT",
-                            value = uiState.rut
-                        )
                     }
                 }
             }
