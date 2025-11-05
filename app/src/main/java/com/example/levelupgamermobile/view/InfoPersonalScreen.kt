@@ -40,28 +40,46 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-// V--- ¡CAMBIOS EN LOS IMPORTS! ---V
 import com.example.levelupgamermobile.controller.InfoPersonalUiState
 import com.example.levelupgamermobile.controller.InfoPersonalViewModel
 
 /**
- * Pantalla "inteligente" de Información Personal (antes ProfileScreen)
+ * el "smart composable" para la pantalla de informacion personal.
+ *
+ * esta funcion es responsable de:
+ * 1. obtener la instancia del [InfoPersonalViewModel].
+ * 2. observar el [InfoPersonalUiState] (el estado).
+ * 3. manejar la logica de navegacion de "logout" (via [LaunchedEffect]).
+ * 4. pasar el estado y los eventos al composable "tonto" [InfoPersonalContent].
+ *
+ * @param onLogoutComplete funcion lambda para navegar de vuelta al [LoginScreen]
+ * al completarse el logout.
+ * @param onBackPress funcion lambda para manejar la navegacion hacia atras
+ * (volver al [ProfileMenuScreen]).
  */
 @Composable
-fun InfoPersonalScreen( // <-- ¡NOMBRE CAMBIADO!
-    viewModel: InfoPersonalViewModel = viewModel(), // <-- ¡ViewModel CAMBIADO!
+fun InfoPersonalScreen(
+    viewModel: InfoPersonalViewModel = viewModel(),
     onLogoutComplete: () -> Unit,
     onBackPress: () -> Unit
 ) {
+    // observa el stateflow del viewmodel.
+    // 'uistate' se actualizara automaticamente cada vez que
+    // el estado en el viewmodel cambie.
     val uiState by viewModel.uiState.collectAsState()
 
+    // launchedeffect es un "oyente" que se dispara cuando
+    // 'uistate.logoutcomplete' cambia a 'true'.
+    // se usa para manejar la navegacion *despues* de que la logica
+    // del viewmodel haya terminado.
     LaunchedEffect(key1 = uiState.logoutComplete) {
         if (uiState.logoutComplete) {
             onLogoutComplete()
         }
     }
 
-    InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
+    // delega la logica de la ui al composable "tonto".
+    InfoPersonalContent(
         uiState = uiState,
         onLogoutClick = { viewModel.logout() },
         onBackPress = onBackPress
@@ -69,37 +87,48 @@ fun InfoPersonalScreen( // <-- ¡NOMBRE CAMBIADO!
 }
 
 /**
- * Contenido "tonto" (antes ProfileContent)
+ * el "dumb composable" (tonto) que dibuja la ui de la pantalla.
+ *
+ * no tiene logica de negocio. solo recibe el estado ([InfoPersonalUiState])
+ * y reporta los eventos (clics) a las funciones lambda.
+ *
+ * tambien gestiona el estado local del dialogo de confirmacion ('showdialog').
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
-    uiState: InfoPersonalUiState, // <-- ¡UiState CAMBIADO!
+fun InfoPersonalContent(
+    uiState: InfoPersonalUiState,
     onLogoutClick: () -> Unit,
     onBackPress: () -> Unit
 ) {
+    // estado local para controlar la visibilidad del dialogo de alerta.
     var showDialog by remember { mutableStateOf(false) }
 
+    // logica para mostrar el dialogo de confirmacion
     if (showDialog) {
         AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Cerrar Sesión") },
-            text = { Text("¿Estás seguro de que deseas cerrar la sesión?") },
+            onDismissRequest = { showDialog = false }, // cierra si se toca fuera
+            title = { Text("cerrar sesion") },
+            text = { Text("¿estas seguro de que deseas cerrar la sesion?") },
+
+            // boton de confirmar (si, cerrar sesion)
             confirmButton = {
                 TextButton(
                     onClick = {
                         showDialog = false
-                        onLogoutClick()
+                        onLogoutClick() // llama a la logica de logout
                     }
                 ) {
-                    Text("Confirmar")
+                    Text("confirmar")
                 }
             },
+
+            // boton de descartar (no, cancelar)
             dismissButton = {
                 TextButton(
                     onClick = { showDialog = false }
                 ) {
-                    Text("Cancelar")
+                    Text("cancelar")
                 }
             }
         )
@@ -108,12 +137,12 @@ fun InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Información Personal") },
+                title = { Text("informacion personal") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = "volver"
                         )
                     }
                 }
@@ -126,6 +155,7 @@ fun InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
                 .padding(paddingValues)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            // 'spacebetween' empuja el boton de logout al fondo.
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -134,22 +164,27 @@ fun InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
                 if (uiState.isLoading) {
                     CircularProgressIndicator()
                 } else {
+                    // contenedor para las tarjetas de informacion
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         InfoCard(
                             icon = Icons.Filled.Person,
-                            label = "Nombre",
+                            label = "nombre",
                             value = uiState.nombreCompleto
                         )
                         InfoCard(
                             icon = Icons.Filled.Email,
-                            label = "Email",
+                            label = "email",
                             value = uiState.email
                         )
+                        // el 'infocard' para el rut fue removido
+                        // por ser un dato sensible.
                     }
                 }
             }
 
             Button(
+                // este boton no llama a 'onlogoutclick' directamente,
+                // sino que activa el dialogo de confirmacion.
                 onClick = { showDialog = true },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -157,16 +192,20 @@ fun InfoPersonalContent( // <-- ¡NOMBRE CAMBIADO!
             ) {
                 Icon(
                     imageVector = Icons.Filled.ExitToApp,
-                    contentDescription = "Cerrar Sesión",
+                    contentDescription = "cerrar sesion",
                     modifier = Modifier.padding(end = 8.dp)
                 )
-                Text("CERRAR SESIÓN")
+                Text("CERRAR SESION")
             }
         }
     }
 }
 
-// (Helper InfoCard - Sin cambios)
+/**
+ * un composable privado y reutilizable para mostrar una
+ * fila de informacion (icono, etiqueta y valor)
+ * dentro de una [Card].
+ */
 @Composable
 private fun InfoCard(
     icon: ImageVector,

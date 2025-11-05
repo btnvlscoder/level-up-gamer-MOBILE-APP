@@ -9,7 +9,13 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
-// (1) Define el ColorScheme usando tus colores
+/**
+ * define la paleta de colores semantica para la app.
+ *
+ * material 3 usa este 'darkcolorscheme' para aplicar los colores
+ * definidos en [Color.kt] (ej. [LvlUpBlue]) a los componentes
+ * de forma estandar (ej. 'primary' para botones, 'surface' para tarjetas).
+ */
 private val DarkColorScheme = darkColorScheme(
     primary = md_theme_dark_primary,
     onPrimary = md_theme_dark_onPrimary,
@@ -21,19 +27,39 @@ private val DarkColorScheme = darkColorScheme(
     onBackground = md_theme_dark_onBackground,
     surface = md_theme_dark_surface,
     onSurface = md_theme_dark_onSurface
-    // Puedes definir "tertiary", "surfaceVariant", etc.,
-    // o dejar que Material 3 los genere automáticamente.
+    // material 3 genera automaticamente los colores "container"
+    // y "variant" basados en estos colores base.
 )
 
+/**
+ * el composable principal del tema de la aplicacion.
+ *
+ * esta funcion envuelve todo el contenido de la app (en [MainActivity])
+ * y aplica nuestra paleta de colores ([DarkColorScheme]) y
+ * tipografia ([Typography]) personalizadas.
+ *
+ * @param darktheme forzamos que sea 'true' para mantener la identidad
+ * de marca (modo oscuro) de la app.
+ * @param dynamiccolor se deshabilita ('false') para ignorar
+ * los colores del sistema operativo (colores de wallpaper)
+ * y usar siempre nuestros colores de marca.
+ * @param content el contenido de la app que sera envuelto.
+ */
 @Composable
 fun LevelUpGamerMobileTheme(
-    // (2) Forzamos el tema oscuro, ya que es la identidad de tu marca
     darkTheme: Boolean = true,
-    dynamicColor: Boolean = false, // Desactivamos colores dinámicos de Android
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = DarkColorScheme // Usamos siempre el tema oscuro
+    // la app solo soporta el tema oscuro para mantener la
+    // identidad "gamer" definida en el css.
+    val colorScheme = DarkColorScheme
 
+    // este bloque 'sideeffect' permite controlar vistas de android
+    // que estan "fuera" de compose.
+    // aqui lo usamos para cambiar el color de la barra de estado
+    // del sistema (donde se ve la hora y la bateria) para
+    // que coincida con el fondo de nuestra app.
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -43,9 +69,11 @@ fun LevelUpGamerMobileTheme(
         }
     }
 
+    // aplica el tema de material 3 a todo el '@composable content'
+    // que esta dentro de el.
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography, // (Definiremos esto en el Paso 2)
+        typography = Typography, // definido en [Type.kt]
         content = content
     )
 }

@@ -3,17 +3,30 @@ package com.example.levelupgamermobile.model
 import com.google.gson.annotations.SerializedName
 
 /**
- * Espejo del UsuarioDTO.java de Spring Boot.
- * Representa los datos del usuario que RECIBIMOS en un login exitoso,
- * y los datos que ENVIAMOS al registrarnos.
+ * define la estructura de datos para el usuario.
+ * es un espejo del 'usuariodto.java' del backend.
+ *
+ * esta data class se usa en dos momentos:
+ * 1. como los datos que enviamos al registrarnos (en [AuthRepository]).
+ * 2. como los datos que recibimos del backend al iniciar sesion
+ * (ej. en [LoginResult]).
+ *
+ * se usa [SerializedName] para asegurar que el nombre de la clave
+ * en el json (ej. "email") coincida exactamente con el que
+ * espera el backend.
  */
 data class UsuarioDTO(
 
     @SerializedName("email")
     val email: String,
 
+    /**
+     * al registrar, enviamos la contrasena.
+     * al recibir (ej. en [LoginResult]), el backend envia "**********"
+     * por seguridad.
+     */
     @SerializedName("password")
-    val password: String, // Al registrar enviamos esto, al recibir viene "**********"
+    val password: String,
 
     @SerializedName("rut")
     val rut: String,
@@ -27,6 +40,11 @@ data class UsuarioDTO(
     @SerializedName("apellidoMaterno")
     val apellidoMaterno: String,
 
+    /**
+     * el rol del usuario (ej. "duocuc", "levelupgamer").
+     * es 'nullable' (?) porque el backend puede no enviarlo
+     * en todas las respuestas (ej. al registrar).
+     */
     @SerializedName("rol")
-    val rol: String? // Lo hacemos 'nullable' (?) por si acaso el backend no lo envía
+    val rol: String?
 )

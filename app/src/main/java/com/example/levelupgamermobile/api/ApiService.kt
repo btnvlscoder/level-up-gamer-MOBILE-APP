@@ -3,32 +3,30 @@ package com.example.levelupgamermobile.api
 import com.example.levelupgamermobile.model.LoginDTO
 import com.example.levelupgamermobile.model.UsuarioDTO
 import com.example.levelupgamermobile.model.UsuarioResponse
-import retrofit2.Response // ¡Importante! Usamos Response<> para leer el código de error
+import retrofit2.Response // usamos response<> para leer el codigo de estado http
 import retrofit2.http.Body
 import retrofit2.http.POST
 
 /**
- * Este es el contrato que define CÓMO hablar con tu backend Spring Boot.
- * Cada función aquí debe coincidir con un @RequestMapping en tu Controller.
+ * esta interfaz define el "contrato" de nuestra api.
+ * cada funcion aqui es un endpoint de retrofit que
+ * coincide con un requestmapping en el backend.
  */
 interface ApiService {
 
     /**
-     * Coincide con tu @PostMapping("/usuario/login")
+     * define el endpoint para el inicio de sesion.
      *
-     * Usamos Response<UsuarioDTO> en lugar de solo UsuarioDTO.
-     * ¿Por qué? Porque tu API devuelve UsuarioDTO si sale bien (Código 200)
-     * o un String de error si sale mal (Código 401).
-     *
-     * Response<> nos permite revisar el código (response.isSuccessful)
-     * y manejar el éxito o el error correctamente.
+     * usamos response<usuariodto> en lugar de solo usuariodto
+     * para poder manejar respuestas de exito (200) y de error (401)
+     * de forma controlada, leyendo el codigo de estado (response.issuccessful).
      */
     @POST("usuario/login")
     suspend fun login(@Body loginDto: LoginDTO): Response<UsuarioDTO>
 
     /**
-     * Coincide con tu @PostMapping("/usuario")
-     * (El de registro)
+     * define el endpoint para el registro de un nuevo usuario.
+     * coincide con el @postmapping("/usuario") del backend.
      */
     @POST("usuario")
     suspend fun registrar(@Body usuarioDto: UsuarioDTO): UsuarioResponse

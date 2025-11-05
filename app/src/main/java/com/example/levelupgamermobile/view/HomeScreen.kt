@@ -20,7 +20,7 @@ import androidx.navigation.navigation
 import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.navigation.BottomNavItem
 import com.example.levelupgamermobile.navigation.ProfileNavRoutes
-// Imports de pantallas
+// imports de todas tus pantallas
 import com.example.levelupgamermobile.view.CartScreen
 import com.example.levelupgamermobile.view.InfoPersonalScreen
 import com.example.levelupgamermobile.view.MisComprasScreen
@@ -34,13 +34,30 @@ import com.example.levelupgamermobile.view.VoucherScreen
 import com.example.levelupgamermobile.view.AcercaDeScreen
 import com.example.levelupgamermobile.view.TerminosScreen
 
+/**
+ * la pantalla contenedora principal de la app (post-login).
+ *
+ * esta pantalla es responsable de la navegacion principal
+ * mediante la barra inferior (bottom navigation bar).
+ *
+ * implementa una navegacion anidada:
+ * - [mainNavController] (de [MainActivity]) se usa para navegar "fuera"
+ * (a [ProductDetailScreen] o al logout).
+ * - [nestedNavController] (local) se usa para navegar "dentro" de las pestanas.
+ *
+ * @param mainNavController el controlador de navegacion "padre" (de [MainActivity]).
+ * @param onLogoutComplete funcion lambda que se ejecuta para volver al [LoginScreen].
+ */
 @Composable
 fun HomeScreen(
     mainNavController: NavHostController,
     onLogoutComplete: () -> Unit
 ) {
+    // controlador de navegacion "anidado" o "interno"
+    // para gestionar las pestanas.
     val nestedNavController = rememberNavController()
 
+    // define los items de la barra de navegacion
     val items = listOf(
         BottomNavItem.Store,
         BottomNavItem.Cart,
@@ -57,15 +74,22 @@ fun HomeScreen(
                     NavigationBarItem(
                         icon = { Icon(screen.icon, contentDescription = screen.title) },
                         label = { Text(screen.title) },
+                        // logica de seleccion:
+                        // la pestana se marca como activa si la ruta actual
+                        // comienza con la ruta raiz de la pestana
+                        // (ej. "profile_tab/info_personal" activa "profile_tab").
                         selected = currentDestination?.hierarchy?.any {
                             it.route?.startsWith(screen.route) == true
                         } == true,
                         onClick = {
+                            // logica de navegacion interna para las pestanas.
                             nestedNavController.navigate(screen.route) {
+                                // evita acumular historial al cambiar de pestana.
                                 popUpTo(nestedNavController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
                                 launchSingleTop = true
+                                // restaura el estado al volver (ej. scroll).
                                 restoreState = true
                             }
                         }
@@ -74,35 +98,41 @@ fun HomeScreen(
             }
         }
     ) { innerPadding ->
+        // navhost "interno" que dibuja la pantalla de la pestana seleccionada.
         NavHost(
             navController = nestedNavController,
             startDestination = BottomNavItem.Store.route,
             modifier = Modifier.padding(innerPadding)
         ) {
 
-            // --- Pestaña 1: Tienda ---
-            composable(BottomNavItem.Store.route) {
+            // --- pestana 1: tienda ---
+            composable(BottomNavItem.Store.route) { // "store_tab"
                 ProductListScreen(
                     onProductClick = { productId ->
+                        // usa el [mainNavController] (padre) para navegar a una pantalla
+                        // que cubra toda la app (incluyendo la barra inferior).
                         mainNavController.navigate(AppScreens.productDetail(productId))
                     }
                 )
             }
 
-            // --- Pestaña 2: Carrito ---
-            composable(BottomNavItem.Cart.route) {
+            // --- pestana 2: carrito ---
+            composable(BottomNavItem.Cart.route) { // "cart_tab"
                 CartScreen(
                     onBackPress = { nestedNavController.popBackStack() },
                     onComprarClick = {
+                        // usa el [nestedNavController] (hijo) para navegar
+                        // "dentro" del flujo del carrito.
                         nestedNavController.navigate("voucher")
                     }
                 )
             }
 
-            // --- Ruta del Voucher ---
+            // --- ruta del voucher (parte del flujo del carrito) ---
             composable("voucher") {
                 VoucherScreen(
                     onFinalizarClick = {
+                        // resetea el grafo de navegacion interno a la tienda.
                         nestedNavController.navigate(BottomNavItem.Store.route) {
                             popUpTo(nestedNavController.graph.findStartDestination().id) {
                                 inclusive = true
@@ -112,10 +142,12 @@ fun HomeScreen(
                 )
             }
 
-            // --- Pestaña 3: Perfil (Grafo anidado) ---
+            // --- pestana 3: perfil (grafo de navegacion anidado) ---
+            // define un sub-grafo completo para la pestana de perfil.
+            // esto agrupa todas las pantallas de perfil bajo la ruta 'profile_tab'.
             navigation(
-                startDestination = ProfileNavRoutes.MENU,
-                route = BottomNavItem.Profile.route
+                startDestination = ProfileNavRoutes.MENU, // la primera pantalla de este grupo
+                route = BottomNavItem.Profile.route // la ruta de la pestana
             ) {
 
                 composable(ProfileNavRoutes.MENU) {
@@ -133,12 +165,14 @@ fun HomeScreen(
                     )
                 }
 
+                // --- soporte (el formulario real) ---
                 composable(ProfileNavRoutes.SOPORTE) {
                     SoporteScreen(
                         onBackPress = { nestedNavController.popBackStack() }
                     )
                 }
 
+                // --- mis tickets (la maqueta) ---
                 composable(ProfileNavRoutes.MIS_TICKETS) {
                     MisTicketsScreen(
                         onBackPress = { nestedNavController.popBackStack() }
@@ -157,19 +191,17 @@ fun HomeScreen(
                     )
                 }
 
-                // V--- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---V
                 composable(ProfileNavRoutes.TERMINOS) {
-                    TerminosScreen( // <-- ¡Ya no es Placeholder!
+                    TerminosScreen(
                         onBackPress = { nestedNavController.popBackStack() }
                     )
                 }
 
                 composable(ProfileNavRoutes.ACERCA_DE) {
-                    AcercaDeScreen( // <-- ¡Ya no es Placeholder!
+                    AcercaDeScreen(
                         onBackPress = { nestedNavController.popBackStack() }
                     )
                 }
-                // A--- FIN DE LA CORRECCIÓN ---A
             }
         }
     }

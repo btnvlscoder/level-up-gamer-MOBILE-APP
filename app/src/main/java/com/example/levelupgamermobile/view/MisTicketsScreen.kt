@@ -28,7 +28,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.levelupgamermobile.ui.theme.LvlUpGreen
 
-// (1) Creamos datos de ejemplo solo para la maqueta
+// --- datos de maqueta (mock) ---
+// esta pantalla no esta conectada a un viewmodel.
+// usa datos falsos (fake) para simular la apariencia
+// de una lista de tickets de soporte.
+
+/**
+ * define la estructura de un ticket de soporte falso.
+ * solo se usa dentro de este archivo.
+ */
 private data class FakeTicket(
     val id: String,
     val asunto: String,
@@ -36,14 +44,22 @@ private data class FakeTicket(
     val colorEstado: Color
 )
 
+/**
+ * la lista de datos de ejemplo.
+ */
 private val fakeTickets = listOf(
-    FakeTicket("T-12345", "Problema con mi compra", "Abierto", LvlUpGreen),
-    FakeTicket("T-12342", "Reseña no aparece", "Cerrado", Color.Gray),
-    FakeTicket("T-12340", "Consulta sobre garantía", "Cerrado", Color.Gray)
+    FakeTicket("t-12345", "problema con mi compra", "abierto", LvlUpGreen),
+    FakeTicket("t-12342", "resena no aparece", "cerrado", Color.Gray),
+    FakeTicket("t-12340", "consulta sobre garantia", "cerrado", Color.Gray)
 )
 
 /**
- * Pantalla de Maqueta para "Mis Tickets"
+ * pantalla de maqueta (mockup) para "mis tickets".
+ *
+ * esta pantalla es unicamente visual y no tiene conexion
+ * con ningun viewmodel o repositorio.
+ *
+ * @param onBackPress funcion lambda para manejar la navegacion hacia atras.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,16 +69,19 @@ fun MisTicketsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis Tickets") },
+                title = { Text("mis tickets") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
-                        Icon(Icons.Filled.ArrowBack, "Volver")
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "volver"
+                        )
                     }
                 }
             )
         }
     ) { paddingValues ->
-        // (2) Mostramos la lista de tickets falsos
+        // muestra la lista de tickets falsos
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -78,7 +97,8 @@ fun MisTicketsScreen(
 }
 
 /**
- * Un Composable para mostrar un solo ticket de maqueta
+ * un composable privado para dibujar una unica fila
+ * de ticket de maqueta.
  */
 @Composable
 private fun TicketItem(ticket: FakeTicket) {

@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
-
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,11 +42,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.CartUiState
 import com.example.levelupgamermobile.controller.CartViewModel
 import com.example.levelupgamermobile.model.CartItem
-import java.text.NumberFormat
-import java.util.Locale
+import com.example.levelupgamermobile.utils.formatPrice // import de la funcion centralizada
 
 /**
- * Pantalla "inteligente" del Carrito
+ * el "smart composable" para la pantalla del carrito.
+ *
+ * esta funcion es responsable de:
+ * 1. obtener la instancia del [CartViewModel].
+ * 2. observar el [uiState] del viewmodel.
+ * 3. pasar el estado y las funciones (lambdas) de eventos
+ * al composable "tonto" [CartScreenContent].
+ *
+ * @param onBackPress funcion lambda para manejar la navegacion hacia atras.
+ * @param onComprarClick funcion lambda para navegar al [VoucherScreen].
  */
 @Composable
 fun CartScreen(
@@ -55,8 +62,12 @@ fun CartScreen(
     onBackPress: () -> Unit,
     onComprarClick: () -> Unit
 ) {
+    // observa el stateflow del viewmodel.
+    // 'uistate' se actualizara automaticamente cada vez que
+    // el estado en el viewmodel cambie (ej. al anadir un item).
     val uiState by viewModel.uiState.collectAsState()
 
+    // delega la logica de la ui al composable "tonto".
     CartScreenContent(
         uiState = uiState,
         onBackPress = onBackPress,
@@ -68,7 +79,12 @@ fun CartScreen(
 }
 
 /**
- * Pantalla "tonta" del Carrito
+ * el "dumb composable" (tonto) que solo dibuja la ui del carrito.
+ *
+ * no tiene logica de negocio. solo recibe el estado ([CartUiState])
+ * y las funciones (lambdas) que debe ejecutar ante eventos.
+ *
+ * esto hace que esta funcion sea facil de previsualizar y probar.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -83,17 +99,18 @@ fun CartScreenContent(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Carrito de Compras") },
+                title = { Text("carrito de compras") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = "volver"
                         )
                     }
                 }
             )
         },
+        // la barra inferior solo se muestra si hay items en el carrito.
         bottomBar = {
             if (uiState.items.isNotEmpty()) {
                 Column(
@@ -101,21 +118,24 @@ fun CartScreenContent(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    // seccion del total
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            "Total:",
-                            style = MaterialTheme. typography.titleLarge
+                            "total:",
+                            style = MaterialTheme.typography.titleLarge
                         )
                         Text(
+                            // usamos el 'formatprice' importado de 'utils'
                             formatPrice(uiState.total),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     Spacer(Modifier.height(16.dp))
+                    // boton de compra
                     Button(
                         onClick = onComprarClick,
                         modifier = Modifier.fillMaxWidth()
@@ -126,6 +146,9 @@ fun CartScreenContent(
             }
         }
     ) { paddingValues ->
+        // contenido principal (la lista)
+
+        // si la lista esta vacia, muestra un mensaje centrado.
         if (uiState.items.isEmpty()) {
             Box(
                 modifier = Modifier
@@ -133,9 +156,10 @@ fun CartScreenContent(
                     .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Tu carrito está vacío.")
+                Text("tu carrito esta vacio.")
             }
         } else {
+            // si hay items, muestra la 'lazycolumn' (lista optimizada)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -143,12 +167,13 @@ fun CartScreenContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(uiState.items, key = { it.producto.codigo }) { item ->
+                // itera sobre la lista de items y dibuja un 'cartitemrow' por cada uno
+                items(uiState.items, key = { it.product.codigo }) { item ->
                     CartItemRow(
                         item = item,
-                        onIncrease = { onIncrease(item.producto.codigo) },
-                        onDecrease = { onDecrease(item.producto.codigo) },
-                        onRemove = { onRemove(item.producto.codigo) }
+                        onIncrease = { onIncrease(item.product.codigo) },
+                        onDecrease = { onDecrease(item.product.codigo) },
+                        onRemove = { onRemove(item.product.codigo) }
                     )
                 }
             }
@@ -157,7 +182,7 @@ fun CartScreenContent(
 }
 
 /**
- * Composable para UNA fila del carrito
+ * composable para dibujar una unica fila (item) en el carrito.
  */
 @Composable
 fun CartItemRow(
@@ -168,32 +193,35 @@ fun CartItemRow(
 ) {
     Card(elevation = CardDefaults.cardElevation(4.dp)) {
         Column(Modifier.padding(8.dp)) {
+            // seccion superior (imagen, info, boton de borrar)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(id = item.producto.imagenes.first()),
-                    contentDescription = item.producto.nombre,
+                    painter = painterResource(id = item.product.imagenes.first()),
+                    contentDescription = item.product.nombre,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.size(80.dp)
                 )
+                // columna de informacion (nombre, subtotal)
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .padding(horizontal = 8.dp)
                 ) {
-                    Text(item.producto.nombre, fontWeight = FontWeight.Bold)
-                    Text(formatPrice(item.producto.precio * item.cantidad))
+                    Text(item.product.nombre, fontWeight = FontWeight.Bold)
+                    Text(formatPrice(item.product.precio * item.cantidad))
                 }
+                // boton de eliminar (tacho de basura)
                 IconButton(onClick = onRemove) {
-                    // --- CORRECCIÓN AQUÍ ---
                     Icon(
                         imageVector = Icons.Filled.Delete,
-                        contentDescription = "Eliminar"
+                        contentDescription = "eliminar"
                     )
                 }
             }
+            // seccion inferior (controles de cantidad)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -204,7 +232,7 @@ fun CartItemRow(
                 IconButton(onClick = onDecrease, enabled = item.cantidad > 1) {
                     Icon(
                         imageVector = Icons.Filled.Remove,
-                        contentDescription = "Restar"
+                        contentDescription = "restar"
                     )
                 }
                 Text(
@@ -215,17 +243,10 @@ fun CartItemRow(
                 IconButton(onClick = onIncrease) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Sumar"
+                        contentDescription = "sumar"
                     )
                 }
             }
         }
     }
-}
-
-// --- FUNCIÓN HELPER (AYUDANTE) ---
-private fun formatPrice(price: Int): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
-    format.maximumFractionDigits = 0
-    return format.format(price)
 }

@@ -51,25 +51,32 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.ProductDetailUiState
 import com.example.levelupgamermobile.controller.ProductDetailViewModel
-import com.example.levelupgamermobile.model.Producto
-import com.example.levelupgamermobile.model.Resena
+import com.example.levelupgamermobile.model.Product
+import com.example.levelupgamermobile.model.Review
 import com.example.levelupgamermobile.ui.theme.LvlUpGreen
-import java.text.NumberFormat
-import java.util.Locale
+import com.example.levelupgamermobile.utils.formatPrice
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import kotlin.math.ceil
 import kotlin.math.floor
-import androidx.compose.material3.SnackbarHost // ¡NUEVO!
-import androidx.compose.material3.SnackbarHostState // ¡NUEVO!
-import androidx.compose.runtime.LaunchedEffect // ¡NUEVO!
-import androidx.compose.runtime.remember // ¡NUEVO!
-import androidx.compose.runtime.rememberCoroutineScope // ¡NUEVO!
-import kotlinx.coroutines.flow.collectLatest // ¡NUEVO!
-import kotlinx.coroutines.launch // ¡NUEVO!
 
 /**
- * Pantalla "inteligente" (Smart Composable).
+ * el "smart composable" para la pantalla de detalle de producto.
+ *
+ * esta funcion es responsable de:
+ * 1. obtener la instancia del [ProductDetailViewModel].
+ * 2. observar el [ProductDetailUiState].
+ * 3. manejar eventos de un solo uso (como snackbars) con [LaunchedEffect].
+ * 4. gestionar el [Scaffold] y [SnackbarHost] para esta pantalla.
+ * 5. pasar el estado y los eventos al composable "tonto" [ProductDetailContent].
+ *
+ * @param onBackPress funcion lambda para manejar la navegacion hacia atras.
  */
-@OptIn(ExperimentalMaterial3Api::class) // ¡NUEVO! Mover OptIn aquí
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     viewModel: ProductDetailViewModel = viewModel(),
@@ -77,11 +84,12 @@ fun ProductDetailScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // (1) ¡NUEVO! Configuración del Snackbar
+    // 1. configuracion del snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // (2) ¡NUEVO! "Escucha" los mensajes del ViewModel
+    // 2. "escucha" los eventos de mensaje del viewmodel
+    //    (ej. "resena ya existe" o "resena anadida")
     LaunchedEffect(key1 = Unit) {
         viewModel.snackbarMessage.collectLatest { message ->
             scope.launch {
@@ -90,26 +98,26 @@ fun ProductDetailScreen(
         }
     }
 
-    // (3) ¡CAMBIO!
-    // Movemos el Scaffold aquí para que controle el Snackbar
+    // 3. el scaffold principal que contiene la ui
     Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }, // ¡NUEVO!
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Detalle del Producto") },
+                title = { Text("detalle del producto") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Volver"
+                            contentDescription = "volver"
                         )
                     }
                 }
             )
         }
     ) { paddingValues ->
+        // 4. delega el dibujo del contenido
         ProductDetailContent(
-            paddingValues = paddingValues, // ¡NUEVO! Pasa el padding
+            paddingValues = paddingValues,
             uiState = uiState,
             onAddToCartClick = { viewModel.addToCart() },
             onAddReview = { calificacion, comentario ->
@@ -120,20 +128,24 @@ fun ProductDetailScreen(
 }
 
 /**
- * Composable "tonto" que solo dibuja la UI.
+ * el "dumb composable" (tonto) que dibuja el cuerpo de la pantalla.
+ *
+ * esta funcion es responsable de decidir que mostrar:
+ * - el indicador de carga (loading).
+ * - el mensaje de error.
+ * - la lista [ProductDetails] si todo esta correcto.
  */
 @Composable
 fun ProductDetailContent(
-    paddingValues: PaddingValues, // ¡NUEVO! Recibe el padding
+    paddingValues: PaddingValues,
     uiState: ProductDetailUiState,
     onAddToCartClick: () -> Unit,
     onAddReview: (Int, String) -> Unit
 ) {
-    // (4) ¡CAMBIO! El Scaffold se fue
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues), // ¡Aplica el padding!
+            .padding(paddingValues), // aplica el padding del scaffold
         contentAlignment = Alignment.Center
     ) {
         when {
@@ -144,9 +156,10 @@ fun ProductDetailContent(
                     color = MaterialTheme.colorScheme.error
                 )
             }
-            uiState.producto != null -> {
+            uiState.product != null -> {
+                // si el producto se cargo, dibuja los detalles
                 ProductDetails(
-                    producto = uiState.producto,
+                    producto = uiState.product,
                     reviews = uiState.reviews,
                     averageRating = uiState.averageRating,
                     onAddToCartClick = onAddToCartClick,
@@ -158,13 +171,14 @@ fun ProductDetailContent(
 }
 
 /**
- * Dibuja los detalles del producto
+ * el "dumb composable" (tonto) que dibuja el [LazyColumn]
+ * con toda la informacion del producto y las resenas.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProductDetails(
-    producto: Producto,
-    reviews: List<Resena>,
+    producto: Product,
+    reviews: List<Review>,
     averageRating: Float,
     onAddToCartClick: () -> Unit,
     onAddReview: (Int, String) -> Unit
@@ -173,7 +187,7 @@ fun ProductDetails(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(bottom = 16.dp)
     ) {
-        // --- SLIDER DE IMÁGENES ---
+        // --- 1. slider de imagenes ---
         item {
             val pagerState = rememberPagerState(
                 initialPage = 0,
@@ -183,18 +197,18 @@ fun ProductDetails(
                 state = pagerState,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .aspectRatio(1f)
+                    .aspectRatio(1f) // mantiene relacion de aspecto cuadrada
             ) { pageIndex ->
                 Image(
                     painter = painterResource(id = producto.imagenes[pageIndex]),
-                    contentDescription = "Imagen ${pageIndex + 1} de ${producto.nombre}",
+                    contentDescription = "imagen ${pageIndex + 1} de ${producto.nombre}",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
             }
         }
 
-        // --- INFORMACIÓN DEL PRODUCTO ---
+        // --- 2. informacion del producto ---
         item {
             Column(
                 modifier = Modifier.padding(16.dp),
@@ -211,11 +225,11 @@ fun ProductDetails(
                     fontWeight = FontWeight.Bold
                 )
 
-                // Muestra la calificación promedio
+                // helper para mostrar las estrellas (promedio)
                 StarRatingDisplay(rating = averageRating, reviewCount = reviews.size)
 
                 Text(
-                    text = formatPrice(producto.precio),
+                    text = formatPrice(producto.precio), // usamos el util
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -235,23 +249,23 @@ fun ProductDetails(
             }
         }
 
-        // --- SECCIÓN DE RESEÑAS ---
+        // --- 3. seccion de resenas ---
         item {
             Column(Modifier.padding(horizontal = 16.dp)) {
                 Divider(modifier = Modifier.padding(vertical = 16.dp))
                 Text(
-                    "Reseñas y Calificaciones",
+                    "resenas y calificaciones",
                     style = MaterialTheme.typography.titleLarge
                 )
-                // Formulario para añadir reseña
+                // formulario para anadir resena
                 AddReviewForm(onAddReview = onAddReview)
 
                 Spacer(Modifier.height(16.dp))
 
-                // Lista de reseñas
+                // lista de resenas existentes
                 if (reviews.isEmpty()) {
                     Text(
-                        "Este producto aún no tiene reseñas. ¡Sé el primero!",
+                        "este producto aun no tiene resenas. ¡se el primero!",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 } else {
@@ -262,11 +276,15 @@ fun ProductDetails(
     }
 }
 
-// --- FORMULARIO DE RESEÑA ---
+/**
+ * composable para el formulario de anadir resena.
+ * gestiona su propio estado local (rating, comentario, error).
+ */
 @Composable
 fun AddReviewForm(
     onAddReview: (Int, String) -> Unit
 ) {
+    // estado local para el formulario
     var rating by remember { mutableStateOf(0) }
     var comentario by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
@@ -275,39 +293,40 @@ fun AddReviewForm(
         modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text("Deja tu reseña:", style = MaterialTheme.typography.titleMedium)
+        Text("deja tu resena:", style = MaterialTheme.typography.titleMedium)
 
-        // Input de Estrellas
+        // input de estrellas
         StarRatingInput(
             rating = rating,
             onRatingChange = {
                 rating = it
-                showError = false
+                showError = false // limpia el error al seleccionar
             }
         )
 
         OutlinedTextField(
             value = comentario,
-            // V--- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---V
-            onValueChange = { comentario = it }, // Era "onValueCodeChange"
-            label = { Text("Escribe tu comentario...") },
+            onValueChange = { comentario = it }, // <-- ¡CORREGIDO!
+            label = { Text("escribe tu comentario...") },
             modifier = Modifier.fillMaxWidth(),
             minLines = 3
         )
 
         if (showError) {
-            Text("Por favor, selecciona una calificación (1-5)", color = MaterialTheme.colorScheme.error)
+            Text("por favor, selecciona una calificacion (1-5)", color = MaterialTheme.colorScheme.error)
         }
 
         Button(
             onClick = {
+                // validacion simple: debe tener calificacion
                 if (rating > 0) {
                     onAddReview(rating, comentario)
+                    // resetea el formulario
                     rating = 0
                     comentario = ""
                     showError = false
                 } else {
-                    showError = true
+                    showError = true // muestra el error
                 }
             },
             modifier = Modifier.align(Alignment.End)
@@ -317,15 +336,17 @@ fun AddReviewForm(
     }
 }
 
-// --- LISTA DE RESEÑAS ---
+/**
+ * dibuja la lista de resenas enviadas.
+ */
 @Composable
-fun ReviewsList(reviews: List<Resena>) {
+fun ReviewsList(reviews: List<Review>) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         reviews.forEach { review ->
             Card(elevation = CardDefaults.cardElevation(2.dp)) {
                 Column(Modifier.fillMaxWidth().padding(12.dp)) {
                     Text(
-                        review.userName, // Muestra solo el nombre de pila
+                        review.userName, // solo el nombre de pila
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold
                     )
@@ -338,7 +359,10 @@ fun ReviewsList(reviews: List<Resena>) {
     }
 }
 
-// --- HELPER: INPUT DE ESTRELLAS ---
+/**
+ * un helper composable para dibujar las 5 estrellas
+ * de *seleccion* (input).
+ */
 @Composable
 fun StarRatingInput(
     rating: Int,
@@ -349,8 +373,8 @@ fun StarRatingInput(
         (1..5).forEach { index ->
             Icon(
                 imageVector = if (index <= rating) Icons.Filled.Star else Icons.Filled.StarBorder,
-                contentDescription = "Estrella $index",
-                tint = LvlUpGreen,
+                contentDescription = "estrella $index",
+                tint = LvlUpGreen, // usa el color verde neon
                 modifier = Modifier
                     .size(40.dp)
                     .clickable { onRatingChange(index) }
@@ -359,7 +383,10 @@ fun StarRatingInput(
     }
 }
 
-// --- HELPER: MOSTRAR ESTRELLAS (PROMEDIO) ---
+/**
+ * un helper composable para *mostrar* (display)
+ * una calificacion promedio, incluyendo medias estrellas.
+ */
 @Composable
 fun StarRatingDisplay(
     rating: Float,
@@ -374,16 +401,20 @@ fun StarRatingDisplay(
         val halfStar = ceil(rating) - floor(rating) > 0.4
         val emptyStars = 5 - fullStars - (if (halfStar) 1 else 0)
 
+        // estrellas llenas
         repeat(fullStars) {
             Icon(Icons.Filled.Star, contentDescription = null, tint = LvlUpGreen)
         }
+        // media estrella
         if (halfStar) {
             Icon(Icons.Filled.StarHalf, contentDescription = null, tint = LvlUpGreen)
         }
+        // estrellas vacias
         repeat(emptyStars) {
             Icon(Icons.Filled.StarBorder, contentDescription = null, tint = LvlUpGreen)
         }
 
+        // numero opcional de resenas
         if (reviewCount != null) {
             Text(
                 " ($reviewCount)",
@@ -393,11 +424,4 @@ fun StarRatingDisplay(
             )
         }
     }
-}
-
-// --- HELPER DE PRECIO ---
-private fun formatPrice(price: Int): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
-    format.maximumFractionDigits = 0
-    return format.format(price)
 }

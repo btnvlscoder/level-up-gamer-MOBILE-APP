@@ -11,17 +11,42 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/**
+ * gestiona la logica y el estado de la pantalla de registro.
+ *
+ * esta clase se encarga de:
+ * - recibir los datos del formulario desde la vista (view).
+ * - validar los datos (ej. contrasenas coincidentes).
+ * - llamar al AuthRepository para procesar el registro.
+ * - exponer el RegisterUiState (cargando, error, exito) a la vista.
+ */
 class RegisterViewModel : ViewModel() {
 
     private val authRepository = AuthRepository
 
-    // (1) El Estado (STATE)
-    // Usa el "RegisterUiState" correcto
+    // _uistate es el stateflow interno y mutable que solo
+    // este viewmodel puede modificar.
     private val _uiState = MutableStateFlow(RegisterUiState())
+
+    /**
+     * el uistate publico e inmutable que la vista (view) observa
+     * para reaccionar a los cambios de estado.
+     */
     val uiState: StateFlow<RegisterUiState> = _uiState.asStateFlow()
 
-    // (2) Acción de Registro
-    // Acepta los parámetros que le envía la Vista
+    /**
+     * ejecuta la logica de registro.
+     * esta funcion es llamada por la vista (view) cuando el usuario
+     * presiona el boton de "crear cuenta".
+     *
+     * @param email el email del formulario.
+     * @param pass la contrasena del formulario.
+     * @param confirmPass la contrasena de confirmacion.
+     * @param rut el rut del formulario.
+     * @param nombre el nombre del formulario.
+     * @param apellidoP el apellido paterno del formulario.
+     * @param apellidoM el apellido materno del formulario.
+     */
     fun doRegister(
         email: String,
         pass: String,
@@ -31,22 +56,24 @@ class RegisterViewModel : ViewModel() {
         apellidoP: String,
         apellidoM: String
     ) {
+        // previene multiples clics si ya se esta procesando una solicitud.
         if (_uiState.value.isLoading) return
 
-        // (3) Validación
+        // 1. validacion de logica de negocio local
         if (pass != confirmPass) {
-            _uiState.update { it.copy(error = "Las contraseñas no coinciden") }
+            _uiState.update { it.copy(error = "las contrasenas no coinciden") }
             return
         }
         if (email.isBlank() || pass.isBlank() || rut.isBlank() || nombre.isBlank()) {
-            _uiState.update { it.copy(error = "Rellena todos los campos obligatorios") }
+            _uiState.update { it.copy(error = "rellena todos los campos obligatorios") }
             return
         }
 
-        // (4) Estado de "Cargando"
+        // 2. actualiza el estado a 'cargando'
         _uiState.update { it.copy(isLoading = true, error = null) }
 
-        // Creamos el DTO para enviar al backend
+        // 3. crea el objeto de transferencia de datos (dto)
+        //    que se enviara al backend.
         val newUser = UsuarioDTO(
             email = email,
             password = pass,
@@ -54,28 +81,31 @@ class RegisterViewModel : ViewModel() {
             nombre = nombre,
             apellidoPaterno = apellidoP,
             apellidoMaterno = apellidoM,
-            rol = null // El backend decide el rol
+            rol = null // el backend es responsable de asignar el rol
         )
 
-        // (5) Lanzamos la corrutina
+        // 4. lanza una corrutina para la operacion de red
         viewModelScope.launch {
             val result = authRepository.register(newUser)
 
-            // (6) Manejamos el resultado
+            // 5. maneja el resultado de la operacion
             when (result) {
                 is RegisterResult.Success -> {
+                    // exito: actualiza el estado para disparar la navegacion.
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            registerSuccess = true // ¡Éxito!
+                            registerSuccess = true
                         )
                     }
                 }
                 is RegisterResult.Error -> {
+                    // error: actualiza el estado para mostrar el mensaje
+                    // (ej. "el email ya esta en uso").
                     _uiState.update {
                         it.copy(
                             isLoading = false,
-                            error = result.message // Mostramos el error del backend
+                            error = result.message
                         )
                     }
                 }

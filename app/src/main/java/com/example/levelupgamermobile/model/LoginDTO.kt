@@ -3,11 +3,15 @@ package com.example.levelupgamermobile.model
 import com.google.gson.annotations.SerializedName
 
 /**
- * Espejo del LoginDTO.java de Spring Boot.
- * Representa los datos que ENVIAMOS al endpoint /usuario/login.
+ * define la estructura de datos para la peticion de login.
+ * es un espejo del 'logindto.java' del backend.
  *
- * Usamos @SerializedName para asegurarnos de que el nombre
- * en el JSON sea exactamente el que espera el backend.
+ * esta data class representa el cuerpo (body) json que
+ * se envia al endpoint '/usuario/login'.
+ *
+ * se usa [SerializedName] para asegurar que el nombre de la clave
+ * en el json (ej. "email") coincida exactamente con el que
+ * espera el backend, independientemente del nombre de la variable en kotlin.
  */
 data class LoginDTO(
 

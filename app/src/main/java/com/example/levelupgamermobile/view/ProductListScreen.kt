@@ -43,7 +43,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.ProductListUiState
 import com.example.levelupgamermobile.controller.ProductListViewModel
-import com.example.levelupgamermobile.model.Producto
+import com.example.levelupgamermobile.model.Product
 import com.example.levelupgamermobile.ui.theme.LvlUpGreen
 import com.example.levelupgamermobile.ui.theme.Orbitron // ¡NUEVO! Importa la fuente
 import kotlinx.coroutines.flow.collectLatest
@@ -114,7 +114,7 @@ fun ProductListContent(
     onProductClick: (String) -> Unit,
     onSearchQueryChange: (String) -> Unit,
     onCategoryChange: (String) -> Unit,
-    onAddToCartClick: (Producto) -> Unit
+    onAddToCartClick: (Product) -> Unit
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(2),
@@ -198,7 +198,7 @@ fun ProductListContent(
         // --- Lista de Productos ---
         items(uiState.filteredProducts, key = { it.codigo }) { producto ->
             ProductItem(
-                producto = producto,
+                product = producto,
                 onClick = { onProductClick(producto.codigo) },
                 onAddToCartClick = { onAddToCartClick(producto) }
             )
@@ -212,7 +212,7 @@ fun ProductListContent(
  */
 @Composable
 fun ProductItem(
-    producto: Producto,
+    product: Product,
     onClick: () -> Unit,
     onAddToCartClick: () -> Unit
 ) {
@@ -223,8 +223,8 @@ fun ProductItem(
         Column {
             // (1) La IMAGEN es clickeable (para ir al detalle)
             Image(
-                painter = painterResource(id = producto.imagenes.first()),
-                contentDescription = producto.nombre,
+                painter = painterResource(id = product.imagenes.first()),
+                contentDescription = product.nombre,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -239,19 +239,19 @@ fun ProductItem(
                 // (2) Los TEXTOS son clickeables (para ir al detalle)
                 Column(modifier = Modifier.clickable(onClick = onClick)) { // <-- Clic aquí
                     Text(
-                        text = producto.marca.uppercase(),
+                        text = product.marca.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        text = producto.nombre,
+                        text = product.nombre,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = formatPrice(producto.precio),
+                        text = formatPrice(product.precio),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(top = 4.dp)

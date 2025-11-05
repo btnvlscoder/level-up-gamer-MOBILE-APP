@@ -30,32 +30,47 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.CartViewModel
 import com.example.levelupgamermobile.model.CartItem
 import com.example.levelupgamermobile.ui.theme.LvlUpGreen
-import java.text.NumberFormat
-import java.util.Locale
+import com.example.levelupgamermobile.utils.formatPrice // import de la funcion centralizada
 
+/**
+ * el "smart composable" para la pantalla de voucher (resumen de compra).
+ *
+ * esta funcion es responsable de:
+ * 1. reutilizar el [CartViewModel] para acceder al estado del carrito
+ * (los items y el total) *antes* de que se borre.
+ * 2. observar el [CartUiState].
+ * 3. manejar la logica de finalizacion de la compra cuando el boton
+ * "finalizar" es presionado (guardar, limpiar y navegar).
+ *
+ * @param viewModel la instancia de [CartViewModel], obtenida por defecto.
+ * @param onFinalizarClick funcion lambda para navegar de vuelta a la tienda
+ * (a [BottomNavItem.Store]).
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoucherScreen(
     viewModel: CartViewModel = viewModel(),
     onFinalizarClick: () -> Unit
 ) {
+    // 1. leemos el estado del viewmodel.
+    //    este 'uistate' es el estado final del carrito antes
+    //    de que se confirme la compra.
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Resumen de Compra") })
+            TopAppBar(title = { Text("resumen de compra") })
         },
         bottomBar = {
             Button(
                 onClick = {
-                    // --- ¡AQUÍ ESTÁ EL CAMBIO! ---
-                    // (1) Primero, guarda la compra
+                    // 1. guarda un registro permanente de la compra
+                    //    en datastore a traves del viewmodel.
                     viewModel.savePurchase()
-                    // (2) Segundo, vacía el carrito
+                    // 2. vacia el carrito (en [CartRepository]).
                     viewModel.clearCart()
-                    // (3) Tercero, navega
+                    // 3. navega de vuelta a la tienda.
                     onFinalizarClick()
-                    // --- FIN DEL CAMBIO ---
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -71,29 +86,29 @@ fun VoucherScreen(
                 .padding(paddingValues),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
         ) {
-            // (Título)
+            // --- titulo ---
             item {
                 Text(
-                    "¡Gracias por tu compra!",
+                    "¡gracias por tu compra!",
                     style = MaterialTheme.typography.headlineSmall,
                     color = LvlUpGreen
                 )
                 Spacer(Modifier.height(16.dp))
             }
 
-            // (Lista de items comprados)
-            items(uiState.items, key = { it.producto.codigo }) { item ->
+            // --- lista de items ---
+            items(uiState.items, key = { it.product.codigo }) { item ->
                 VoucherItemRow(item = item)
             }
 
-            // (Total)
+            // --- total ---
             item {
                 Divider(Modifier.padding(vertical = 16.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Total Pagado:", style = MaterialTheme.typography.titleLarge)
+                    Text("total pagado:", style = MaterialTheme.typography.titleLarge)
                     Text(
                         formatPrice(uiState.total),
                         style = MaterialTheme.typography.titleLarge,
@@ -106,8 +121,12 @@ fun VoucherScreen(
     }
 }
 
-// --- (VoucherItemRow y formatPrice no cambian) ---
-
+/**
+ * composable privado para dibujar una unica fila
+ * de item en el resumen del voucher.
+ *
+ * @param item el [CartItem] a dibujar.
+ */
 @Composable
 private fun VoucherItemRow(item: CartItem) {
     Card(
@@ -126,22 +145,16 @@ private fun VoucherItemRow(item: CartItem) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.producto.nombre, fontWeight = FontWeight.Bold)
+                Text(item.product.nombre, fontWeight = FontWeight.Bold)
                 Text(
-                    "Cantidad: ${item.cantidad}",
+                    "cantidad: ${item.cantidad}",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
             Text(
-                formatPrice(item.producto.precio * item.cantidad),
+                formatPrice(item.product.precio * item.cantidad),
                 style = MaterialTheme.typography.bodyLarge
             )
         }
     }
-}
-
-private fun formatPrice(price: Int): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
-    format.maximumFractionDigits = 0
-    return format.format(price)
 }

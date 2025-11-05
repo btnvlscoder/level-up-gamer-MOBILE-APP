@@ -42,13 +42,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.MisComprasUiState
 import com.example.levelupgamermobile.controller.MisComprasViewModel
 import com.example.levelupgamermobile.model.Purchase
-import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+// --- imports de utilidades (reemplazan las funciones locales) ---
+import com.example.levelupgamermobile.utils.formatDate
+import com.example.levelupgamermobile.utils.formatPrice
 
 /**
- * Pantalla "inteligente" que muestra el historial
+ * el "smart composable" para la pantalla "mis compras".
+ *
+ * esta funcion es responsable de:
+ * 1. obtener la instancia del [MisComprasViewModel].
+ * 2. observar el [MisComprasUiState] (la lista de [Purchase]).
+ * 3. manejar el estado de carga (loading) o de lista vacia.
+ *
+ * @param onBackPress funcion lambda para manejar la navegacion hacia atras.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,15 +62,19 @@ fun MisComprasScreen(
     viewModel: MisComprasViewModel = viewModel(),
     onBackPress: () -> Unit
 ) {
+    // observa el stateflow del viewmodel.
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mis Compras") },
+                title = { Text("mis compras") },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
-                        Icon(Icons.Filled.ArrowBack, "Volver")
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "volver"
+                        )
                     }
                 }
             )
@@ -72,17 +82,19 @@ fun MisComprasScreen(
     ) { paddingValues ->
 
         if (uiState.isLoading) {
-            // (Muestra un indicador de carga si es necesario)
+            // (por ahora no se muestra nada mientras carga)
         } else if (uiState.purchases.isEmpty()) {
-            // (Mensaje si no hay compras)
+            // si no hay compras, muestra un mensaje centrado.
             Box(
-                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Aún no has realizado ninguna compra.")
+                Text("aun no has realizado ninguna compra.")
             }
         } else {
-            // (Muestra la lista de compras)
+            // si hay compras, muestra la 'lazycolumn' (lista optimizada).
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -90,6 +102,7 @@ fun MisComprasScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // itera sobre la lista de compras y dibuja un 'purchaseitem'.
                 items(uiState.purchases, key = { it.id }) { purchase ->
                     PurchaseItem(purchase = purchase)
                 }
@@ -99,21 +112,27 @@ fun MisComprasScreen(
 }
 
 /**
- * Un Composable para mostrar una sola compra (expandible)
+ * el "dumb composable" (tonto) que dibuja una unica
+ * tarjeta de compra en el historial.
+ *
+ * esta tarjeta es "expandible" para mostrar los items
+ * detallados de la compra.
+ *
+ * @param purchase el objeto [Purchase] a dibujar.
  */
 @Composable
 private fun PurchaseItem(purchase: Purchase) {
-    // (1) Estado para saber si la tarjeta está expandida
+    // (1) estado local para controlar si la tarjeta esta expandida
     var isExpanded by remember { mutableStateOf(false) }
 
     Card(
         elevation = CardDefaults.cardElevation(2.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded } // Expande/contrae al hacer clic
+            .clickable { isExpanded = !isExpanded } // expande/contrae al hacer clic
     ) {
         Column(Modifier.padding(16.dp)) {
-            // (2) Fila de resumen (siempre visible)
+            // (2) fila de resumen (siempre visible)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -121,30 +140,31 @@ private fun PurchaseItem(purchase: Purchase) {
             ) {
                 Column {
                     Text(
-                        // Formatea la fecha
-                        text = "Compra: ${formatDate(purchase.date)}",
+                        // usamos el 'formatdate' de 'utils'
+                        text = "compra: ${formatDate(purchase.date)}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "Total: ${formatPrice(purchase.total)}",
+                        // usamos el 'formatprice' de 'utils'
+                        "total: ${formatPrice(purchase.total)}",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
                 Icon(
                     imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = "Expandir"
+                    contentDescription = "expandir"
                 )
             }
 
-            // (3) Detalles (solo visible si está expandido)
+            // (3) detalles (solo visible si 'isexpanded' es true)
             AnimatedVisibility(visible = isExpanded) {
                 Column(modifier = Modifier.padding(top = 16.dp)) {
                     Divider()
                     Spacer(Modifier.height(16.dp))
-                    Text("Items:", style = MaterialTheme.typography.labelLarge)
-                    // (4) Lista de items dentro de la compra
+                    Text("items:", style = MaterialTheme.typography.labelLarge)
+                    // (4) lista de items dentro de la compra
                     purchase.items.forEach { item ->
                         Row(
                             modifier = Modifier
@@ -152,25 +172,12 @@ private fun PurchaseItem(purchase: Purchase) {
                                 .padding(vertical = 4.dp),
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text("(${item.cantidad}x) ${item.producto.nombre}")
-                            Text(formatPrice(item.producto.precio * item.cantidad))
+                            Text("(${item.cantidad}x) ${item.product.nombre}")
+                            Text(formatPrice(item.product.precio * item.cantidad))
                         }
                     }
                 }
             }
         }
     }
-}
-
-// --- Helpers (Funciones Ayudantes) ---
-
-private fun formatPrice(price: Int): String {
-    val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
-    format.maximumFractionDigits = 0
-    return format.format(price)
-}
-
-private fun formatDate(timestamp: Long): String {
-    val sdf = SimpleDateFormat("dd/MM/yyyy 'a las' HH:mm", Locale("es", "CL"))
-    return sdf.format(Date(timestamp))
 }

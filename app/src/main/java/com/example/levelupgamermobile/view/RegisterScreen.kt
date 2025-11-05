@@ -41,7 +41,18 @@ import com.example.levelupgamermobile.controller.RegisterViewModel
 import kotlinx.coroutines.launch
 
 /**
- * Pantalla "inteligente" de Registro.
+ * el "smart composable" para la pantalla de registro.
+ *
+ * esta funcion es responsable de:
+ * 1. obtener la instancia del [RegisterViewModel].
+ * 2. observar el [RegisterUiState] (el estado de carga/error).
+ * 3. gestionar el estado local de los campos de texto (ej. email, pass).
+ * 4. manejar los "efectos secundarios" (side-effects) como
+ * mostrar un [Snackbar] y navegar al exito.
+ * 5. pasar el estado y los eventos al composable "tonto" [RegisterContent].
+ *
+ * @param onRegisterSuccess funcion lambda para navegar a [HomeScreen].
+ * @param onBackClick funcion lambda para manejar la navegacion hacia atras.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,47 +61,52 @@ fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onBackClick: () -> Unit
 ) {
+    // 1. observa el stateflow del viewmodel.
     val uiState by viewModel.uiState.collectAsState()
 
-    // (1) Necesitamos un "SnackbarHostState" para mostrar el mensaje
+    // 2. se necesita un 'snackbarhoststate' y un 'coroutinescope'
+    //    para poder mostrar mensajes (ej. "registrado").
     val snackbarHostState = remember { SnackbarHostState() }
-    // (2) Necesitamos un "CoroutineScope" para lanzar el snackbar
     val scope = rememberCoroutineScope()
 
-    // (3) LaunchedEffect para el éxito del registro
+    // 3. launchedeffect se usa para manejar la navegacion y el snackbar.
+    //    se dispara solo cuando 'uistate.registersuccess' cambia a 'true'.
     LaunchedEffect(key1 = uiState.registerSuccess) {
         if (uiState.registerSuccess) {
-
-            // --- ¡AQUÍ ESTÁ LA CORRECCIÓN! ---
             scope.launch {
-                // (A) Primero, muestra el mensaje Y ESPERA
+                // (a) primero, muestra el snackbar y *espera* a que termine.
                 snackbarHostState.showSnackbar(
-                    message = "¡Registrado correctamente!",
+                    message = "¡registrado correctamente!",
                     duration = SnackbarDuration.Short
                 )
-                // (B) DESPUÉS de que el snackbar termine, navega
+                // (b) segundo, despues de que el snackbar se oculta, navega.
                 onRegisterSuccess()
             }
-            // --- FIN DE LA CORRECCIÓN ---
         }
     }
 
-    // (4) Movemos el Scaffold aquí, a la pantalla "inteligente"
-    // para que pueda controlar el SnackbarHost.
+    // 4. el scaffold se define aqui (en el "smart composable")
+    //    para que 'snackbarhost' este en el mismo nivel que 'launchedeffect'.
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Crear Cuenta") },
+                title = { Text("crear cuenta") },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "volver"
+                        )
                     }
                 }
             )
         }
     ) { paddingValues ->
 
+        // 5. estado local para los campos del formulario.
+        //    la vista (view) es "duena" de este estado y se lo pasa
+        //    al viewmodel solo al momento de hacer clic.
         var email by remember { mutableStateOf("") }
         var pass by remember { mutableStateOf("") }
         var confirmPass by remember { mutableStateOf("") }
@@ -99,8 +115,9 @@ fun RegisterScreen(
         var apellidoP by remember { mutableStateOf("") }
         var apellidoM by remember { mutableStateOf("") }
 
+        // 6. delega el dibujo de la ui al composable "tonto".
         RegisterContent(
-            paddingValues = paddingValues, // Le pasamos el padding del Scaffold
+            paddingValues = paddingValues,
             uiState = uiState,
             email = email,
             onEmailChange = { email = it },
@@ -116,6 +133,8 @@ fun RegisterScreen(
             onApellidoPChange = { apellidoP = it },
             apellidoM = apellidoM,
             onApellidoMChange = { apellidoM = it },
+            // al hacer clic, se juntan todos los estados locales
+            // y se envian al viewmodel para su validacion y procesamiento.
             onRegisterClick = {
                 viewModel.doRegister(
                     email, pass, confirmPass, rut, nombre, apellidoP, apellidoM
@@ -126,11 +145,19 @@ fun RegisterScreen(
 }
 
 /**
- * Pantalla "tonta" (Dumb Composable) de Registro.
+ * el "dumb composable" (tonto) que solo dibuja la ui del registro.
+ *
+ * no tiene logica de negocio. solo recibe el estado ([RegisterUiState])
+ * y los valores/lambdas de los campos de texto.
+ *
+ * @param paddingValues padding proveido por el [Scaffold] principal.
+ * @param uiState el estado actual (para 'isloading' y 'error').
+ * @param ... (todos los parametros de los campos de texto).
+ * @param onRegisterClick lambda para el boton de "crear cuenta".
  */
 @Composable
 fun RegisterContent(
-    paddingValues: PaddingValues, // ¡Recibe el padding!
+    paddingValues: PaddingValues,
     uiState: RegisterUiState,
     email: String, onEmailChange: (String) -> Unit,
     pass: String, onPassChange: (String) -> Unit,
@@ -141,27 +168,31 @@ fun RegisterContent(
     apellidoM: String, onApellidoMChange: (String) -> Unit,
     onRegisterClick: () -> Unit
 ) {
+    // 'lazycolumn' se usa para que el formulario sea 'scrollable'
+    // en pantallas pequenas.
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .padding(paddingValues) // ¡Aplica el padding!
-            .padding(16.dp),
+            .padding(paddingValues) // aplica el padding del scaffold
+            .padding(16.dp), // padding interno adicional
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
-        // --- Campos del Formulario (Sin cambios) ---
-        item { OutlinedTextField(value = rut, onValueChange = onRutChange, label = { Text("RUT (sin puntos ni guion)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
-        item { OutlinedTextField(value = nombre, onValueChange = onNombreChange, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
-        item { OutlinedTextField(value = apellidoP, onValueChange = onApellidoPChange, label = { Text("Apellido Paterno") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
-        item { OutlinedTextField(value = apellidoM, onValueChange = onApellidoMChange, label = { Text("Apellido Materno") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
-        item { OutlinedTextField(value = email, onValueChange = onEmailChange, label = { Text("Email") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
-        item { OutlinedTextField(value = pass, onValueChange = onPassChange, label = { Text("Contraseña") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), isError = uiState.error != null) }
-        item { OutlinedTextField(value = confirmPass, onValueChange = onConfirmPassChange, label = { Text("Confirmar Contraseña") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), isError = uiState.error != null) }
+        // --- campos del formulario ---
+        item { OutlinedTextField(value = rut, onValueChange = onRutChange, label = { Text("rut (sin puntos ni guion)") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+        item { OutlinedTextField(value = nombre, onValueChange = onNombreChange, label = { Text("nombre") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+        item { OutlinedTextField(value = apellidoP, onValueChange = onApellidoPChange, label = { Text("apellido paterno") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+        item { OutlinedTextField(value = apellidoM, onValueChange = onApellidoMChange, label = { Text("apellido materno") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+        item { OutlinedTextField(value = email, onValueChange = onEmailChange, label = { Text("email") }, modifier = Modifier.fillMaxWidth(), singleLine = true, isError = uiState.error != null) }
+        item { OutlinedTextField(value = pass, onValueChange = onPassChange, label = { Text("contrasena") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), isError = uiState.error != null) }
+        item { OutlinedTextField(value = confirmPass, onValueChange = onConfirmPassChange, label = { Text("confirmar contrasena") }, modifier = Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), isError = uiState.error != null) }
 
-        // --- Botón de Registro o Carga (Sin cambios) ---
+        // --- boton de registro o indicador de carga ---
         item {
             Spacer(Modifier.height(16.dp))
+            // muestra un 'circularprogressindicator' si 'isloading' es true.
+            // de lo contrario, muestra el boton.
             if (uiState.isLoading) {
                 CircularProgressIndicator()
             } else {
@@ -174,7 +205,8 @@ fun RegisterContent(
             }
         }
 
-        // --- Mensaje de Error (Sin cambios) ---
+        // --- mensaje de error ---
+        // muestra el texto de error solo si no es nulo.
         if (uiState.error != null) {
             item {
                 Text(

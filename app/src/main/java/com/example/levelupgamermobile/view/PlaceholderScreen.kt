@@ -17,7 +17,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 /**
- * Pantalla genérica para secciones "En Construcción".
+ * pantalla generica para secciones "en construccion".
+ *
+ * esta vista se reutiliza en el [NavHost] de [HomeScreen]
+ * para las opciones del menu de perfil que aun no
+ * tienen una pantalla dedicada (ej. [ProfileNavRoutes.TERMINOS]).
+ *
+ * @param title el texto a mostrar en la [TopAppBar].
+ * @param onBackPress funcion lambda para manejar la navegacion hacia atras.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,19 +38,24 @@ fun PlaceholderScreen(
                 title = { Text(title) },
                 navigationIcon = {
                     IconButton(onClick = onBackPress) {
-                        Icon(Icons.Filled.ArrowBack, "Volver")
+                        // correccion: parametros 'imagevector' y 'contentdescription'
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "volver"
+                        )
                     }
                 }
             )
         }
     ) { paddingValues ->
+        // un 'box' simple que centra el mensaje
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             contentAlignment = Alignment.Center
         ) {
-            Text("$title (En Construcción)", style = MaterialTheme.typography.bodyLarge)
+            Text("$title (en construccion)", style = MaterialTheme.typography.bodyLarge)
         }
     }
 }

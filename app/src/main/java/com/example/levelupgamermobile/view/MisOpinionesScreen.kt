@@ -29,15 +29,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.R
-import com.example.levelupgamermobile.controller.MisOpinionesUiState
 import com.example.levelupgamermobile.controller.MisOpinionesViewModel
-import com.example.levelupgamermobile.model.Producto
-import com.example.levelupgamermobile.model.Resena
+import com.example.levelupgamermobile.model.Product
+import com.example.levelupgamermobile.model.Review
 
 /**
  * Pantalla "inteligente" que muestra las reseñas del usuario.
@@ -71,7 +69,7 @@ fun MisOpinionesScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(uiState.opiniones, key = { it.first.id }) { (reseña, producto) ->
-                OpinionItem(reseña = reseña, producto = producto)
+                OpinionItem(reseña = reseña, product = producto)
             }
         }
     }
@@ -81,11 +79,11 @@ fun MisOpinionesScreen(
  * Un Composable para mostrar una sola opinión.
  */
 @Composable
-private fun OpinionItem(reseña: Resena, producto: Producto?) {
+private fun OpinionItem(reseña: Review, product: Product?) {
     Card(elevation = CardDefaults.cardElevation(2.dp)) {
         Column(Modifier.fillMaxWidth()) {
             // (2) Mostramos la info del producto (si existe)
-            if (producto != null) {
+            if (product != null) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -93,13 +91,13 @@ private fun OpinionItem(reseña: Resena, producto: Producto?) {
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
                 ) {
                     Image(
-                        painter = painterResource(id = producto.imagenes.firstOrNull() ?: R.drawable.logo),
-                        contentDescription = producto.nombre,
+                        painter = painterResource(id = product.imagenes.firstOrNull() ?: R.drawable.logo),
+                        contentDescription = product.nombre,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.size(60.dp)
                     )
                     Text(
-                        text = producto.nombre,
+                        text = product.nombre,
                         style = MaterialTheme.typography.titleMedium,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
