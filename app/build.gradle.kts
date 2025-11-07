@@ -1,14 +1,12 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "com.example.levelupgamermobile"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 34
+
 
     defaultConfig {
         applicationId = "com.example.levelupgamermobile"
@@ -39,6 +37,11 @@ android {
     buildFeatures {
         compose = true
     }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.3"
+    }
+
 }
 
 dependencies {
@@ -56,6 +59,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6")
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material.icons)
+    implementation("androidx.core:core-splashscreen:1.0.1")
 
     // Para la Sesión
     implementation(libs.androidx.datastore.preferences)
