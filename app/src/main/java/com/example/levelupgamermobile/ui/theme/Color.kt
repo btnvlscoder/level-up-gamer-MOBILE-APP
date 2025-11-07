@@ -2,10 +2,33 @@ package com.example.levelupgamermobile.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// --- paleta de marca ---
+// estos colores se extrajeron del archivo 'style.css'
+// de la pagina web original para mantener la identidad de marca.
+val LvlUpBlack = Color(0xFF000000)      // --clr-main
+val LvlUpSurface = Color(0xFF0C0C0C)     // --clr-main-light
+val LvlUpWhite = Color(0xFFFFFFFF)      // --clr-white
+val LvlUpGray = Color(0xFFD3D3D3)       // --clr-gray
+val LvlUpBlue = Color(0xFF1E90FF)       // --clr-accent-blue
+val LvlUpGreen = Color(0xFF39FF14)     // --clr-accent-green
+val LvlUpRed = Color(0xFFFF3333)       // --clr-accent-red
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+// --- definicion del tema oscuro (dark theme) ---
+// estos colores "semanticos" le dicen a material 3
+// como usar los colores de nuestra marca.
+// 'primary' es el color principal para botones y acentos (nuestro azul).
+// 'secondary' es el segundo color de acento (nuestro verde neon).
+// 'background' es el color de fondo (negro).
+// 'surface' es el color de las "superficies" (ej. tarjetas, '#0c0c0c').
+// 'on...' define el color del texto *sobre* ese color (ej. 'onprimary' es texto sobre un boton azul).
+
+val md_theme_dark_primary = LvlUpBlue
+val md_theme_dark_onPrimary = LvlUpWhite
+val md_theme_dark_secondary = LvlUpGreen
+val md_theme_dark_onSecondary = LvlUpBlack
+val md_theme_dark_error = LvlUpRed
+val md_theme_dark_onError = LvlUpBlack
+val md_theme_dark_background = LvlUpBlack
+val md_theme_dark_onBackground = LvlUpGray
+val md_theme_dark_surface = LvlUpSurface
+val md_theme_dark_onSurface = LvlUpWhite

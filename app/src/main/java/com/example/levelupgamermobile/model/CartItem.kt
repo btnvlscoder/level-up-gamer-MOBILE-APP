@@ -1,12 +1,15 @@
 package com.example.levelupgamermobile.model
 
 /**
- * Representa un item dentro de nuestro carrito de compras.
+ * define la estructura de un item dentro del carrito de compras.
  *
- * @param producto El producto en sí (con su precio, nombre, etc.)
- * @param cantidad Cuántas unidades de este producto tenemos.
+ * esta data class se usa en [CartRepository] para rastrear
+ * no solo el producto, sino tambien la cantidad seleccionada.
+ *
+ * @param product el objeto [product] completo (con precio, nombre, etc.).
+ * @param cantidad el numero de unidades de este producto en el carrito.
  */
 data class CartItem(
-    val producto: Producto,
+    val product: Product,
     val cantidad: Int
 )

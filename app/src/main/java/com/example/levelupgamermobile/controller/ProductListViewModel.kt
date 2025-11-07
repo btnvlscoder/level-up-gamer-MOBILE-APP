@@ -1,61 +1,114 @@
 package com.example.levelupgamermobile.controller
 
-// Importamos las clases necesarias
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.levelupgamermobile.data.CartRepository
 import com.example.levelupgamermobile.data.ProductRepository
+import com.example.levelupgamermobile.model.Product
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 /**
- * Este es el "Cerebro" de la pantalla de productos.
- * Hereda de "ViewModel()" para que Android lo gestione.
+ * gestiona la logica y el estado de la pantalla del catalogo de productos.
+ *
+ * esta clase es responsable de:
+ * - cargar la lista completa de productos desde el ProductRepository.
+ * - gestionar los estados de los filtros (busqueda y categoria).
+ * - exponer un ProductListUiState reactivo UiState que la vista consume.
+ * - manejar las acciones del usuario, como agregar al carrito.
  */
 class ProductListViewModel : ViewModel() {
 
-    // 1. El Repositorio (nuestro intermediario de datos)
-    // Hacemos que sea "private" (privado) para que solo
-    // este ViewModel pueda hablar con él.
-    private val repository = ProductRepository
+    // obtiene las instancias de los repositorios.
+    private val productRepository = ProductRepository
+    private val cartRepository = CartRepository
 
-    // 2. El Estado (STATE)
-    // "_uiState" es el estado INTERNO y PRIVADO. Es "Mutable" (puede cambiar).
-    // Inicia con un estado vacío.
-    private val _uiState = MutableStateFlow(ProductListUiState())
+    // flujos (flows) internos para gestionar el estado de los filtros.
+    private val _searchQuery = MutableStateFlow("")
+    private val _categoryFilter = MutableStateFlow("Todos")
 
-    // "uiState" es el estado PÚBLICO. Es solo de lectura.
-    // La pantalla (View) "escuchará" los cambios de este objeto.
-    val uiState: StateFlow<ProductListUiState> = _uiState.asStateFlow()
+    // un sharedflow se usa para enviar "eventos" de un solo uso a la ui,
+    // como los mensajes de snackbar, que no deben re-mostrarse
+    // si la pantalla rota o se recompone.
+    private val _snackbarMessage = MutableSharedFlow<String>()
+    val snackbarMessage = _snackbarMessage.asSharedFlow()
 
-    // 3. El Bloque de Inicialización
+    // cargamos la lista completa de productos y categorias una sola vez.
+    // esto es eficiente porque el filtrado se hara en la memoria.
+    private val _fullProductList = productRepository.getProductos()
+    private val _allCategories = listOf("Todos") + _fullProductList
+        .map { it.categoria }
+        .distinct()
+        .sorted()
+
     /**
-     * "init" es un bloque de código que se ejecuta
-     * automáticamente la PRIMERA VEZ que se crea el ViewModel.
+     * expone el uistate combinado a la vista (view).
+     *
+     * usamos 'combine' para escuchar los dos flujos (flows) de filtros.
+     * si cualquiera de los filtros cambia, este bloque se re-ejecuta
+     * automaticamente para crear un nuevo estado.
      */
-    init {
-        // En cuanto se cree, mandamos a cargar los productos.
-        cargarProductos()
+    val uiState: StateFlow<ProductListUiState> = combine(
+        _searchQuery,
+        _categoryFilter
+    ) { query, category ->
+
+        // logica de filtrado
+        val filteredList = _fullProductList.filter { producto ->
+            // 1. logica de filtrado por categoria.
+            val categoryMatch = (category == "Todos" || producto.categoria == category)
+            // 2. logica de filtrado por busqueda (nombre o marca).
+            val queryMatch = (
+                    producto.nombre.contains(query, ignoreCase = true) ||
+                            producto.marca.contains(query, ignoreCase = true)
+                    )
+            // 3. el producto debe cumplir ambas condiciones.
+            categoryMatch && queryMatch
+        }
+
+        // emite el nuevo estado que la ui (vista) dibujara.
+        ProductListUiState(
+            isLoading = false,
+            searchQuery = query,
+            categoryFilter = category,
+            allCategories = _allCategories,
+            filteredProducts = filteredList
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+        initialValue = ProductListUiState()
+    )
+
+    /**
+     * actualiza el 'query' de busqueda.
+     * es llamado por la vista (view) cuando el usuario escribe.
+     */
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
     }
 
-    // 4. Las Funciones (ACCIONES)
     /**
-     * Esta función pide los productos al repositorio
-     * y actualiza el estado (_uiState).
+     * actualiza la categoria seleccionada.
+     * es llamado por la vista (view) desde el menu desplegable.
      */
-    private fun cargarProductos() {
-        // 1. Pedimos los productos al repositorio
-        val productos = repository.getProductos()
+    fun onCategoryChange(category: String) {
+        _categoryFilter.value = category
+    }
 
-        // 2. Actualizamos el estado
-        // .update { ... } es la forma segura de cambiar el estado.
-        // "it.copy(...)" crea una copia del estado actual,
-        // pero cambiando solo los campos que nos interesan.
-        _uiState.update { estadoActual ->
-            estadoActual.copy(
-                isLoading = false, // Ya no estamos cargando
-                productos = productos // Le pasamos la lista de productos
-            )
+    /**
+     * anade un producto al carrito y emite un evento de snackbar.
+     * es llamado por la vista (view) desde el boton en el 'productitem'.
+     */
+    fun onAddToCartClick(product: Product) {
+        cartRepository.addItem(product)
+        viewModelScope.launch {
+            _snackbarMessage.emit("${product.nombre} agregado al carrito")
         }
     }
 }

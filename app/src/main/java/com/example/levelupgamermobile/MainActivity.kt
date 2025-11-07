@@ -3,6 +3,11 @@ package com.example.levelupgamermobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -15,102 +20,154 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.ui.theme.LevelUpGamerMobileTheme
-import com.example.levelupgamermobile.view.CartScreen
+import com.example.levelupgamermobile.view.HomeScreen
 import com.example.levelupgamermobile.view.LoginScreen
 import com.example.levelupgamermobile.view.ProductDetailScreen
-import com.example.levelupgamermobile.view.ProductListScreen
-import com.example.levelupgamermobile.view.RegisterScreen // ¡Importa la nueva pantalla!
+import com.example.levelupgamermobile.view.RegisterScreen
 
+/**
+ * la [Activity] principal y el punto de entrada unico de la aplicacion.
+ *
+ * esta clase es responsable de:
+ * 1. inicializar el tema de la app ([LevelUpGamerMobileTheme]).
+ * 2. configurar el [NavHost] "principal" (padre).
+ *
+ * el [NavHost] principal gestiona la navegacion entre los flujos
+ * "fuera" de la app (autenticacion) y los flujos "dentro" de la app ([HomeScreen]).
+ */
 class MainActivity : ComponentActivity() {
+
+    /**
+     * se llama cuando la [Activity] se crea por primera vez.
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
+        // 1. [installSplashScreen] debe llamarse *antes* de [super.onCreate]
+        //    para manejar correctamente la transicion desde la pantalla de carga.
+        installSplashScreen()
+
+        // 2. se llama al metodo de la superclase.
         super.onCreate(savedInstanceState)
+
+        // 3. 'setcontent' construye la ui de jetpack compose.
         setContent {
             LevelUpGamerMobileTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    // este es el controlador de navegacion "padre".
+                    // se pasa a [HomeScreen] para que pueda navegar a pantallas
+                    // "externas" (como [ProductDetailScreen]).
                     val navController: NavHostController = rememberNavController()
 
-                    // (1) ¡CAMBIO MINUCIOSO!
-                    // El `NavHost` ahora inicia en LOGIN,
-                    // no en PRODUCT_LIST.
+                    // este es el grafo de navegacion "principal" de la app.
                     NavHost(
                         navController = navController,
                         startDestination = AppScreens.LOGIN
                     ) {
 
-                        // --- Ruta 1: Login ---
-                        composable(route = AppScreens.LOGIN) {
+                        // --- 1. ruta de login ---
+                        // es el 'startdestination' (punto de inicio) de la app.
+                        composable(
+                            route = AppScreens.LOGIN,
+                            exitTransition = {
+                                slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut()
+                            },
+                            popEnterTransition = {
+                                slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn()
+                            }
+                        ) {
                             LoginScreen(
-                                // (viewModel() usará el valor por defecto)
                                 onLoginSuccess = {
-                                    // ¡Navegación exitosa!
-                                    navController.navigate(AppScreens.PRODUCT_LIST) {
-                                        // ¡MUY IMPORTANTE!
-                                        // Borra el historial de navegación
-                                        // para que el usuario no pueda "volver"
-                                        // a la pantalla de Login.
+                                    // al hacer login exitoso: navega a 'home'.
+                                    navController.navigate(AppScreens.HOME) {
+                                        // 'popupto(login)' borra el historial para que
+                                        // el usuario no pueda "volver" al login.
                                         popUpTo(AppScreens.LOGIN) { inclusive = true }
                                     }
                                 },
                                 onRegisterClick = {
-                                    // Navega a la pantalla de registro
                                     navController.navigate(AppScreens.REGISTER)
                                 }
                             )
                         }
 
-                        // --- Ruta 2: Registro ---
-                        composable(route = AppScreens.REGISTER) {
+                        // --- 2. ruta de registro ---
+                        composable(
+                            route = AppScreens.REGISTER,
+                            enterTransition = {
+                                slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn()
+                            },
+                            popExitTransition = {
+                                slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut()
+                            }
+                        ) {
                             RegisterScreen(
                                 onRegisterSuccess = {
-                                    // Si el registro es exitoso,
-                                    // lo mandamos a la lista de productos
-                                    // (igual que el login).
-                                    navController.navigate(AppScreens.PRODUCT_LIST) {
-                                        // Borra el historial (Login y Register)
+                                    // al registrarse: navega a 'home'.
+                                    navController.navigate(AppScreens.HOME) {
+                                        // borra todo el historial de autenticacion.
                                         popUpTo(AppScreens.LOGIN) { inclusive = true }
                                     }
                                 },
                                 onBackClick = {
-                                    // Simplemente vuelve atrás (al Login)
                                     navController.popBackStack()
                                 }
                             )
                         }
 
-                        // --- Ruta 3: Lista de Productos ---
-                        composable(route = AppScreens.PRODUCT_LIST) {
-                            ProductListScreen(
-                                onProductClick = { productId ->
-                                    navController.navigate(
-                                        AppScreens.productDetail(productId)
-                                    )
-                                },
-                                onCartClick = {
-                                    navController.navigate(AppScreens.CART)
+                        // --- 3. ruta de home (el contenedor principal) ---
+                        // esta pantalla contiene su propio [NavHost] anidado.
+                        composable(
+                            route = AppScreens.HOME,
+                            enterTransition = {
+                                slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn()
+                            },
+                            exitTransition = {
+                                slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut()
+                            },
+                            popEnterTransition = {
+                                slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn()
+                            },
+                            popExitTransition = {
+                                slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut()
+                            }
+                        ) {
+                            HomeScreen(
+                                mainNavController = navController,
+                                onLogoutComplete = {
+                                    // al cerrar sesion: navega de vuelta a 'login'.
+                                    navController.navigate(AppScreens.LOGIN) {
+                                        // borra 'home' del historial.
+                                        popUpTo(AppScreens.HOME) { inclusive = true }
+                                    }
                                 }
                             )
                         }
 
-                        // --- Ruta 4: Detalle de Producto ---
+                        // --- 4. ruta de detalle de producto ---
+                        // esta ruta se define aqui (en el navhost padre)
+                        // y no en [HomeScreen], porque debe mostrarse
+                        // *encima* de la barra de navegacion inferior.
                         composable(
                             route = AppScreens.PRODUCT_DETAIL,
                             arguments = listOf(navArgument("productId") {
                                 type = NavType.StringType
-                            })
+                            }),
+                            enterTransition = {
+                                slideInHorizontally(initialOffsetX = { 1000 }) + fadeIn()
+                            },
+                            exitTransition = {
+                                slideOutHorizontally(targetOffsetX = { -1000 }) + fadeOut()
+                            },
+                            popEnterTransition = {
+                                slideInHorizontally(initialOffsetX = { -1000 }) + fadeIn()
+                            },
+                            popExitTransition = {
+                                slideOutHorizontally(targetOffsetX = { 1000 }) + fadeOut()
+                            }
                         ) {
                             ProductDetailScreen(
-                                onBackPress = {
-                                    navController.popBackStack()
-                                }
-                            )
-                        }
-
-                        // --- Ruta 5: Carrito ---
-                        composable(route = AppScreens.CART) {
-                            CartScreen(
                                 onBackPress = {
                                     navController.popBackStack()
                                 }

@@ -12,87 +12,102 @@ import retrofit2.HttpException
 import java.io.IOException
 
 /**
- * Este es el "intermediario" oficial para la autenticación.
- * Es el único que puede hablar con el ApiService y el SessionManager
- * sobre temas de usuarios.
+ * es el "intermediario" oficial para la autenticacion.
+ * actua como la unica fuente de verdad (single source of truth)
+ * para la logica de negocio relacionada con los usuarios.
+ *
+ * es responsable de:
+ * - llamar a los endpoints de la api (login, register).
+ * - guardar y leer la sesion del usuario desde [sessionmanager].
+ * - exponer los datos del usuario (ej. email) al resto de la app.
+ * - manejar y parsear los errores de red.
  */
 object AuthRepository {
 
-    // (1) Obtenemos las instancias de nuestra "plomería" y "memoria"
+    // obtiene las instancias singleton de la api y el session manager.
     private val apiService = RetrofitProvider.apiService
     private val sessionManager = LevelUpGamerApp.sessionManager
 
-    // (2) Exponemos el "flujo" de email para que el resto de la app
-    // sepa si el usuario está logueado o no.
+    // expone los flujos (flows) de datos del usuario desde el session manager.
+    // los viewmodels observaran estos flujos para reaccionar a cambios
+    // en la sesion (ej. login, logout).
     val userEmailFlow: Flow<String?> = sessionManager.userEmailFlow
+    val userNameFlow: Flow<String?> = sessionManager.userNameFlow
+    val userApellidoPFlow: Flow<String?> = sessionManager.userApellidoPFlow
+    val userRolFlow: Flow<String?> = sessionManager.userRolFlow
 
     /**
-     * Intenta iniciar sesión en el backend.
+     * intenta iniciar sesion contra el backend.
+     * maneja tanto los exitos (guardando la sesion) como
+     * los multiples tipos de error (api, red).
      */
     suspend fun login(email: String, password: String): LoginResult {
         val loginDto = LoginDTO(email = email, password = password)
 
-        // "withContext(Dispatchers.IO)" mueve esta tarea
-        // a un hilo secundario (Input/Output) para no
-        // bloquear la interfaz de usuario.
+        // ejecuta la llamada de red en el hilo de io (entrada/salida)
+        // para no bloquear la ui.
         return withContext(Dispatchers.IO) {
             try {
-                // (3) Hacemos la llamada a la API
                 val response = apiService.login(loginDto)
 
                 if (response.isSuccessful) {
-                    // (4) ¡Éxito! (Código 200-299)
+                    // exito (codigo 200-299)
                     val usuario = response.body()
                     if (usuario != null) {
-                        // ¡Guardamos la sesión en el disco!
+                        // guarda la sesion del usuario en datastore
                         sessionManager.saveSession(usuario)
                         LoginResult.Success(usuario)
                     } else {
-                        LoginResult.Error("Respuesta exitosa pero cuerpo vacío.")
+                        // exito, pero el backend no envio datos
+                        LoginResult.Error("respuesta exitosa pero cuerpo vacio.")
                     }
                 } else {
-                    // (5) Error de la API (Código 401, 404, 500, etc.)
-                    // Leemos el cuerpo del error (que en tu API es un String)
-                    val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                    // error de api (codigo 4xx o 5xx)
+                    // lee el mensaje de error que envia el backend
+                    val errorBody = response.errorBody()?.string() ?: "error desconocido"
                     LoginResult.Error(errorBody)
                 }
             } catch (e: IOException) {
-                // (6) Error de Red (Sin internet, no se puede conectar al 10.0.2.2)
-                LoginResult.Error("Error de red: No se pudo conectar al servidor.")
+                // error de red (ej. sin internet, no se puede conectar al servidor)
+                LoginResult.Error("error de red: no se pudo conectar al servidor.")
             } catch (e: HttpException) {
-                // (7) Error de Retrofit/HTTP
-                LoginResult.Error("Error HTTP: ${e.message}")
+                // error http generico (ej. problemas con retrofit)
+                LoginResult.Error("error http: ${e.message}")
             }
         }
     }
 
     /**
-     * Intenta registrar un nuevo usuario.
+     * intenta registrar un nuevo usuario en el backend.
+     * si el registro es exitoso, tambien inicia la sesion.
      */
     suspend fun register(usuarioDto: UsuarioDTO): RegisterResult {
         return withContext(Dispatchers.IO) {
             try {
-                // Llamamos al endpoint de registro
                 val response: UsuarioResponse = apiService.registrar(usuarioDto)
 
-                if (response.estado == "OK") {
-                    // Éxito, guardamos la sesión
-                    sessionManager.saveSession(response.usuarioDTO!!)
+                // el backend responde con un json que incluye un campo "estado"
+                if (response.estado == "ok" && response.usuarioDTO != null) {
+                    // exito: guarda la sesion del nuevo usuario
+                    sessionManager.saveSession(response.usuarioDTO)
                     RegisterResult.Success
                 } else {
-                    // Error reportado por el backend (ej. "Email ya existe")
+                    // error logico (ej. "el email ya existe")
                     RegisterResult.Error(response.mensaje)
                 }
             } catch (e: IOException) {
-                RegisterResult.Error("Error de red: No se pudo conectar al servidor.")
+                // error de red
+                RegisterResult.Error("error de red: no se pudo conectar al servidor.")
             } catch (e: HttpException) {
-                RegisterResult.Error("Error HTTP: ${e.message}")
+                // error http
+                RegisterResult.Error("error http: ${e.message}")
             }
         }
     }
 
     /**
-     * Cierra la sesión del usuario.
+     * cierra la sesion del usuario actual
+     * borrando sus datos de datastore.
      */
     suspend fun logout() {
         withContext(Dispatchers.IO) {
@@ -101,14 +116,19 @@ object AuthRepository {
     }
 }
 
-// (8) Clases "selladas" para manejar los resultados
-// de forma segura en los ViewModels.
-
+/**
+ * representa los posibles resultados de la operacion de login.
+ * usar una clase sellada (sealed class) nos permite manejar
+ * el exito y el error de forma segura en el viewmodel.
+ */
 sealed class LoginResult {
     data class Success(val usuario: UsuarioDTO) : LoginResult()
     data class Error(val message: String) : LoginResult()
 }
 
+/**
+ * representa los posibles resultados de la operacion de registro.
+ */
 sealed class RegisterResult {
     object Success : RegisterResult()
     data class Error(val message: String) : RegisterResult()

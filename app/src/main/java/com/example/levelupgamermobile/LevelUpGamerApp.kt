@@ -4,26 +4,43 @@ import android.app.Application
 import com.example.levelupgamermobile.data.SessionManager
 
 /**
- * Clase de Aplicación personalizada.
- * Se inicia antes que cualquier Activity.
+ * clase de aplicacion personalizada para [LevelUpGamerApp].
+ *
+ * esta clase es el punto de entrada principal cuando se inicia
+ * la aplicacion, incluso antes que [MainActivity].
+ *
+ * su proposito principal es inicializar y proveer
+ * instancias singleton (unicas) que necesitan estar
+ * disponibles en toda la app, como el [SessionManager].
+ *
+ * esta clase esta registrada en el 'androidmanifest.xml'.
  */
 class LevelUpGamerApp : Application() {
 
-    // (1) Creamos una "propiedad estática" (companion object)
-    // para nuestro SessionManager.
     companion object {
+        /**
+         * la instancia unica (singleton) de [SessionManager].
+         *
+         * se usa 'lateinit' porque se inicializa en [onCreate].
+         * 'private set' asegura que solo esta clase [LevelUpGamerApp]
+         * pueda asignar su valor, pero el resto de la app
+         * (ej. [AuthRepository]) pueda leerlo.
+         */
         lateinit var sessionManager: SessionManager
-            private set // "private set" = solo esta clase puede asignarle un valor
+            private set
     }
 
     /**
-     * (2) "onCreate" es el primer código que se ejecuta
-     * cuando se lanza la app.
+     * se llama cuando la aplicacion se inicia.
+     *
+     * este es el lugar ideal para inicializar
+     * los singletons que dependen del contexto.
      */
     override fun onCreate() {
         super.onCreate()
-        // Creamos la instancia única de SessionManager,
-        // pasándole el "Contexto" de la aplicación (this).
+
+        // inicializa la instancia unica de [SessionManager]
+        // pasandole el contexto (this) de la aplicacion.
         sessionManager = SessionManager(this)
     }
 }
