@@ -8,6 +8,8 @@ import com.google.gson.annotations.SerializedName
  * y los datos que ENVIAMOS al registrarnos.
  */
 data class UsuarioDTO(
+    @SerializedName("id")
+    val id: Int = 0, // <-- MODIFICADO con valor por defecto
 
     @SerializedName("email")
     val email: String,

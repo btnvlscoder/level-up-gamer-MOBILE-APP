@@ -1,5 +1,6 @@
 package com.example.levelupgamermobile.api
 
+import com.example.levelupgamermobile.model.CrearVentaRequest
 import com.example.levelupgamermobile.model.LoginDTO
 import com.example.levelupgamermobile.model.UsuarioDTO
 import com.example.levelupgamermobile.model.UsuarioResponse
@@ -15,13 +16,6 @@ interface ApiService {
 
     /**
      * Coincide con tu @PostMapping("/usuario/login")
-     *
-     * Usamos Response<UsuarioDTO> en lugar de solo UsuarioDTO.
-     * ¿Por qué? Porque tu API devuelve UsuarioDTO si sale bien (Código 200)
-     * o un String de error si sale mal (Código 401).
-     *
-     * Response<> nos permite revisar el código (response.isSuccessful)
-     * y manejar el éxito o el error correctamente.
      */
     @POST("usuario/login")
     suspend fun login(@Body loginDto: LoginDTO): Response<UsuarioDTO>
@@ -32,4 +26,11 @@ interface ApiService {
      */
     @POST("usuario")
     suspend fun registrar(@Body usuarioDto: UsuarioDTO): UsuarioResponse
+
+    /**
+     * Coincide con tu @PostMapping("/ventas/completa")
+     */
+    @POST("ventas/completa") // <-- CORREGIDO
+    suspend fun crearVenta(@Body crearVentaRequest: CrearVentaRequest): Response<Unit>
+
 }

@@ -30,8 +30,21 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.levelupgamermobile.controller.CartViewModel
 import com.example.levelupgamermobile.model.CartItem
 import com.example.levelupgamermobile.ui.theme.LvlUpGreen
+import com.google.gson.Gson
 import java.text.NumberFormat
 import java.util.Locale
+
+// Data classes for JSON serialization
+private data class VoucherProduct(
+    val name: String,
+    val quantity: Int,
+    val price: Int
+)
+
+private data class VoucherData(
+    val products: List<VoucherProduct>,
+    val total: Int
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,6 +54,20 @@ fun VoucherScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Create the JSON data
+    val voucherDataAsJson = Gson().toJson(
+        VoucherData(
+            products = uiState.items.map {
+                VoucherProduct(
+                    name = it.producto.nombre,
+                    quantity = it.cantidad,
+                    price = it.producto.precio
+                )
+            },
+            total = uiState.total
+        )
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Resumen de Compra") })
@@ -48,14 +75,9 @@ fun VoucherScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    // --- ¡AQUÍ ESTÁ EL CAMBIO! ---
-                    // (1) Primero, guarda la compra
                     viewModel.savePurchase()
-                    // (2) Segundo, vacía el carrito
                     viewModel.clearCart()
-                    // (3) Tercero, navega
                     onFinalizarClick()
-                    // --- FIN DEL CAMBIO ---
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -69,7 +91,8 @@ fun VoucherScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally // Centrar contenido
         ) {
             // (Título)
             item {
@@ -101,6 +124,13 @@ fun VoucherScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
                 }
+                Spacer(Modifier.height(32.dp))
+            }
+
+            // (Código QR)
+            item {
+                // Pass the JSON string to the generator
+                QrCodeGenerator(data = voucherDataAsJson)
             }
         }
     }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.levelupgamermobile.model.CartItem
@@ -23,6 +24,7 @@ class SessionManager(private val context: Context) {
     private val gson = Gson()
 
     companion object {
+        private val USER_ID_KEY = intPreferencesKey("user_id") // <-- AÑADIDO
         private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
         private val USER_NAME_KEY = stringPreferencesKey("user_name")
         private val USER_APELLIDO_P_KEY = stringPreferencesKey("user_apellido_p")
@@ -32,21 +34,27 @@ class SessionManager(private val context: Context) {
 
     suspend fun saveSession(usuario: UsuarioDTO) {
         context.dataStore.edit { preferences ->
+            preferences[USER_ID_KEY] = usuario.id // <-- AÑADIDO
             preferences[USER_EMAIL_KEY] = usuario.email
             preferences[USER_NAME_KEY] = usuario.nombre
-            // preferences[USER_RUT_KEY] = usuario.rut // <-- ELIMINADO
             preferences[USER_APELLIDO_P_KEY] = usuario.apellidoPaterno
             preferences[USER_ROLE_KEY] = usuario.rol ?: ""
         }
     }
+
+    // --- NUEVO MÉTODO ---
+    suspend fun getUserId(): Int? {
+        return context.dataStore.data.map { preferences ->
+            preferences[USER_ID_KEY]
+        }.first()
+    }
+    // --- FIN NUEVO MÉTODO ---
 
     val userEmailFlow: Flow<String?> = context.dataStore.data
         .map { preferences -> preferences[USER_EMAIL_KEY] }
 
     val userNameFlow: Flow<String?> = context.dataStore.data
         .map { preferences -> preferences[USER_NAME_KEY] }
-
-    // val userRutFlow: Flow<String?> = ... // <-- ELIMINADO
 
     val userApellidoPFlow: Flow<String?> = context.dataStore.data
         .map { preferences -> preferences[USER_APELLIDO_P_KEY] }
@@ -60,7 +68,6 @@ class SessionManager(private val context: Context) {
         }
     }
 
-    // --- (Lógica de Historial de Compras - Sin cambios) ---
     val purchaseHistoryFlow: Flow<List<Purchase>> = context.dataStore.data
         .map { preferences ->
             val jsonString = preferences[PURCHASE_HISTORY_KEY] ?: "[]"

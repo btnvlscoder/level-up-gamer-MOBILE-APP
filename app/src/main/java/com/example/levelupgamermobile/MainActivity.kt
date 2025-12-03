@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.ui.theme.LevelUpGamerMobileTheme
+import com.example.levelupgamermobile.view.CameraScreen
 import com.example.levelupgamermobile.view.HomeScreen
 import com.example.levelupgamermobile.view.LoginScreen
 import com.example.levelupgamermobile.view.ProductDetailScreen
@@ -154,6 +155,13 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+                        // --- Ruta 5: Cámara ---
+                        composable(route = AppScreens.CAMERA) {
+                            CameraScreen(onImageCaptured = { uri ->
+                                // Manejar la URI de la imagen capturada
+                                navController.popBackStack()
+                            })
+                        }
                     }
                 }
             }

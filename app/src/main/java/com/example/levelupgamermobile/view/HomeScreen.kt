@@ -1,6 +1,8 @@
 package com.example.levelupgamermobile.view
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -71,6 +73,13 @@ fun HomeScreen(
                         }
                     )
                 }
+                // Botón de la cámara
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Camera, contentDescription = "Camera") },
+                    label = { Text("Camera") },
+                    selected = false,
+                    onClick = { mainNavController.navigate(AppScreens.CAMERA) }
+                )
             }
         }
     ) { innerPadding ->

@@ -18,6 +18,7 @@ object AppScreens {
 
     // Pantalla de "encima" (se muestra sobre HOME)
     const val PRODUCT_DETAIL = "product_detail/{productId}"
+    const val CAMERA = "camera" // Nueva ruta para la cámara
 
     // Función helper (ayudante)
     fun productDetail(productId: String): String {
