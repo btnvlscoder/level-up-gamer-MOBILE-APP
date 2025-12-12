@@ -71,7 +71,8 @@ object AppViewModelProvider {
         // Initializer for MisComprasViewModel
         initializer {
             MisComprasViewModel(
-                ventaRepository = levelUpGamerApplication().container.ventaRepository
+                ventaRepository = levelUpGamerApplication().container.ventaRepository,
+                authRepository = levelUpGamerApplication().container.authRepository
             )
         }
 

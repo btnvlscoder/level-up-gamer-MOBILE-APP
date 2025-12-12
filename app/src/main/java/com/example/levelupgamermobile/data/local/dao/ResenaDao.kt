@@ -18,6 +18,9 @@ interface ResenaDao {
     @Query("SELECT * FROM resenas WHERE userEmail = :userEmail AND productId = :productId LIMIT 1")
     suspend fun getReviewByUserAndProduct(userEmail: String, productId: String): ResenaEntity?
 
+    @Query("DELETE FROM resenas WHERE userEmail = :userEmail")
+    suspend fun deleteReviewsByUser(userEmail: String)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertReview(resena: ResenaEntity)
 }

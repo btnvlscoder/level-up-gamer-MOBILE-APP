@@ -138,6 +138,43 @@ fun CartScreenContent(
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
+                    // Subtotal
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "Subtotal:",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Text(
+                            formatPrice(uiState.subtotal.toInt()),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                    
+                    // Descuento (solo si aplica)
+                    if (uiState.discount > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "Descuento DUOC (10%):",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                "-${formatPrice(uiState.discount.toInt())}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Total final
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween

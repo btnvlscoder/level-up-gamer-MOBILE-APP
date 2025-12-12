@@ -75,16 +75,19 @@ class ProductDetailViewModel(
                 return@launch
             }
             
-            val resena = ResenaEntity(
+            val result = resenaRepository.crearResenaBackend(
                 productId = productId,
                 userEmail = user.email,
-                userName = user.nombre,
                 calificacion = calificacion,
                 comentario = comentario
             )
-            
-            resenaRepository.insertReview(resena)
-            _snackbarMessage.emit("¡Opinión guardada!")
+
+            if (result.isSuccess) {
+                _snackbarMessage.emit("¡Opinión guardada!")
+                // Refresh reviews list handled by Flow from DAO since repo inserts it on success
+            } else {
+                _snackbarMessage.emit("Error al guardar opinión: ${result.exceptionOrNull()?.message}")
+            }
         }
     }
 }

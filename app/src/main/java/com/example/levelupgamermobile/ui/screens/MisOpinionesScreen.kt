@@ -2,6 +2,7 @@ package com.example.levelupgamermobile.ui.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,6 +43,8 @@ import com.example.levelupgamermobile.data.local.entity.ProductoEntity
 import com.example.levelupgamermobile.model.Resena
 import com.example.levelupgamermobile.ui.components.StarRatingDisplay
 
+import androidx.compose.runtime.LaunchedEffect
+
 /**
  * Pantalla "inteligente" que muestra las reseñas del usuario.
  */
@@ -52,6 +55,10 @@ fun MisOpinionesScreen(
     onBackPress: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     Scaffold(
         topBar = {
@@ -65,16 +72,25 @@ fun MisOpinionesScreen(
             )
         }
     ) { paddingValues ->
-        // (1) Mostramos la lista de opiniones
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(uiState.opiniones, key = { it.first.id }) { (reseña, producto) ->
-                OpinionItem(reseña = reseña, producto = producto)
+        if (uiState.isLoading) {
+             Box(
+                 modifier = Modifier.fillMaxSize().padding(paddingValues),
+                 contentAlignment = androidx.compose.ui.Alignment.Center
+             ) {
+                  androidx.compose.material3.CircularProgressIndicator()
+             }
+        } else {
+            // (1) Mostramos la lista de opiniones
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                items(uiState.opiniones, key = { it.first.id }) { (reseña, producto) ->
+                    OpinionItem(reseña = reseña, producto = producto)
+                }
             }
         }
     }

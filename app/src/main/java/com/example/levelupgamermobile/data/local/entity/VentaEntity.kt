@@ -17,6 +17,9 @@ data class VentaEntity(
     @SerializedName("total")
     val total: Double,
 
+    @SerializedName("userEmail")
+    val userEmail: String = "",
+
     @SerializedName("detalles")
     val detalles: List<DetalleVenta>
 )

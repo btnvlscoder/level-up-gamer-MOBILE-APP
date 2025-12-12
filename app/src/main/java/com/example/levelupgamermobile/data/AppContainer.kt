@@ -61,7 +61,8 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val resenaRepository: ResenaRepository by lazy {
         ResenaRepository(
-            resenaDao = database.resenaDao()
+            resenaDao = database.resenaDao(),
+            apiService = RetrofitProvider.apiService
         )
     }
 

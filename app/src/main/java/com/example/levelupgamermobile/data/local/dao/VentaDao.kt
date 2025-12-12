@@ -14,4 +14,10 @@ interface VentaDao {
 
     @Query("SELECT * FROM ventas ORDER BY id DESC")
     fun obtenerVentas(): Flow<List<VentaEntity>>
+
+    @Query("SELECT * FROM ventas WHERE userEmail = :userEmail ORDER BY id DESC")
+    fun obtenerVentasPorUsuario(userEmail: String): Flow<List<VentaEntity>>
+
+    @Query("DELETE FROM ventas WHERE userEmail = :userEmail")
+    suspend fun eliminarVentasPorUsuario(userEmail: String)
 }

@@ -13,12 +13,27 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class MisOpinionesViewModel(
     private val authRepository: AuthRepository,
     private val resenaRepository: ResenaRepository,
     private val productoRepository: ProductoRepository
 ) : ViewModel() {
+
+    init {
+        refresh()
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            authRepository.currentUser.collect { user ->
+                if (user != null) {
+                    resenaRepository.syncResenas(user.email)
+                }
+            }
+        }
+    }
 
     val uiState: StateFlow<MisOpinionesUiState> = authRepository.currentUser
         .flatMapLatest { user ->

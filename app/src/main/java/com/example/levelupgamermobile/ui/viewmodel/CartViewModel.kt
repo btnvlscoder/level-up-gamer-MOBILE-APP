@@ -27,28 +27,46 @@ import java.util.Locale
 
 import kotlinx.coroutines.flow.catch
 
+import kotlinx.coroutines.flow.combine
+
 class CartViewModel(
     private val carritoRepository: CarritoRepository,
     private val ventaRepository: VentaRepository,
     private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    val uiState: StateFlow<CartUiState> = carritoRepository.carritoItems
-        .map { items ->
-            val total = items.sumOf { it.precioUnitario * it.cantidad }
-            CartUiState(
-                items = items,
-                total = total
-            )
+    val uiState: StateFlow<CartUiState> = combine(
+        carritoRepository.carritoItems,
+        authRepository.currentUser
+    ) { items, user ->
+        val subtotal = items.sumOf { it.precioUnitario * it.cantidad }
+        var discount = 0.0
+        
+        // Aplicar descuento si es DUOC
+        if (user != null) {
+            val isDuoc = user.email.lowercase().endsWith("@duocuc.cl") || 
+                         user.rol.uppercase().contains("DUOC")
+            
+            if (isDuoc) {
+                discount = subtotal * 0.10
+            }
         }
-        .catch { e ->
-            emit(CartUiState(errorMessage = "Error al cargar carrito: ${e.message}"))
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CartUiState(isLoading = true)
+
+        CartUiState(
+            items = items,
+            subtotal = subtotal,
+            discount = discount,
+            total = subtotal - discount
         )
+    }
+    .catch { e ->
+        emit(CartUiState(errorMessage = "Error al cargar carrito: ${e.message}"))
+    }
+    .stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = CartUiState(isLoading = true)
+    )
 
     private val _purchaseComplete = MutableSharedFlow<Boolean>()
     val purchaseComplete = _purchaseComplete.asSharedFlow()
@@ -74,8 +92,6 @@ class CartViewModel(
             if (item != null) {
                 if (item.cantidad > 1) {
                     carritoRepository.actualizarCantidad(codigo, item.cantidad - 1)
-                } else {
-                    carritoRepository.eliminarProducto(codigo)
                 }
             }
         }
@@ -132,27 +148,21 @@ class CartViewModel(
 
             if (result.isSuccess) {
                 // 4. Guardar copia local (opcional, pero consistente con tu código anterior)
-                val total = currentItems.sumOf { it.precioUnitario * it.cantidad }
+                val total = result.getOrNull()?.let { 0.0 } ?: currentItems.sumOf { it.precioUnitario * it.cantidad }
+                // Recalculamos el total con descuento para el voucher
+                val subtotal = currentItems.sumOf { it.precioUnitario * it.cantidad }
+                var discount = 0.0
+                if (currentUser.email.lowercase().endsWith("@duocuc.cl") || currentUser.rol.uppercase().contains("DUOC")) {
+                     discount = subtotal * 0.10
+                }
+                val finalTotal = subtotal - discount
                 
                 // Guardar estado para VoucherScreen antes de limpiar
-                _lastPurchase.value = CartUiState(items = currentItems, total = total)
+                _lastPurchase.value = CartUiState(items = currentItems, total = finalTotal, subtotal = subtotal, discount = discount)
 
-                val detalles = currentItems.map {
-                    DetalleVenta(
-                        codigoProducto = it.codigoProducto,
-                        nombreProducto = it.nombreProducto,
-                        cantidad = it.cantidad,
-                        precio = it.precioUnitario
-                    )
-                }
-                
-                val nuevaVenta = VentaEntity(
-                    fecha = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date()),
-                    total = total,
-                    detalles = detalles
-                )
-                
-                ventaRepository.insertVenta(nuevaVenta)
+                // NO insertamos localmente para evitar duplicados. Confiamos en el sync.
+                // Si quisieramos optimismo, deberiamos usar el ID retornado por backend si existiera.
+                // Como VentaEntity genera ID local y Backend ID remoto, mejor esperar al sync.
                 
                 // 5. Limpiar carrito y notificar
                 carritoRepository.vaciarCarrito()

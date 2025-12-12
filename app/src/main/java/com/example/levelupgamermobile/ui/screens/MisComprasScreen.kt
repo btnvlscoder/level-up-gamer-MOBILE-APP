@@ -48,6 +48,8 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.runtime.LaunchedEffect
+
 /**
  * Pantalla "inteligente" que muestra el historial
  */
@@ -58,6 +60,10 @@ fun MisComprasScreen(
     onBackPress: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     Scaffold(
         topBar = {
@@ -74,6 +80,12 @@ fun MisComprasScreen(
 
         if (uiState.isLoading) {
             // (Muestra un indicador de carga si es necesario)
+            Box(
+                modifier = Modifier.fillMaxSize().padding(paddingValues),
+                contentAlignment = Alignment.Center
+            ) {
+                 androidx.compose.material3.CircularProgressIndicator()
+            }
         } else if (uiState.purchases.isEmpty()) {
             // (Mensaje si no hay compras)
             Box(
