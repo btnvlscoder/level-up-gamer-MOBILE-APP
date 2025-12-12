@@ -51,6 +51,10 @@ import com.example.levelupgamermobile.ui.viewmodel.CartViewModel
 import java.text.NumberFormat
 import java.util.Locale
 import androidx.compose.ui.platform.LocalContext
+import com.example.levelupgamermobile.utils.getImageResForProduct
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.example.levelupgamermobile.R
 
 /**
  * Pantalla "inteligente" del Carrito
@@ -206,38 +210,18 @@ fun CartItemRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Validación segura de recursos de imagen
-                val context = LocalContext.current
-                val isImageValid = remember(item.imageRes) {
-                    try {
-                        // Intentamos obtener el nombre del recurso para verificar si existe
-                        if (item.imageRes != 0) {
-                            context.resources.getResourceName(item.imageRes)
-                            true
-                        } else {
-                            false
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                }
-
-                if (isImageValid) {
-                    Image(
-                        painter = painterResource(id = item.imageRes),
-                        contentDescription = item.nombreProducto,
-                        modifier = Modifier.size(80.dp),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    // Fallback si la imagen no es válida
-                    Icon(
-                        imageVector = Icons.Default.ShoppingCart,
-                        contentDescription = item.nombreProducto,
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                // Usamos Coil para carga segura de imagen
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(getImageResForProduct(item.codigoProducto))
+                        .crossfade(true)
+                        .build(),
+                    placeholder = painterResource(R.drawable.placeholder_image),
+                    error = painterResource(R.drawable.placeholder_image),
+                    contentDescription = item.nombreProducto,
+                    modifier = Modifier.size(80.dp),
+                    contentScale = ContentScale.Crop
+                )
                 
                 Column(
                     modifier = Modifier

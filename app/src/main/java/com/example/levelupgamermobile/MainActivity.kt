@@ -29,6 +29,11 @@ import com.example.levelupgamermobile.ui.screens.RegisterScreen
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // (1) Instalar GlobalExceptionHandler
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler(GlobalExceptionHandler(applicationContext, defaultHandler))
+        
         installSplashScreen()
         setContent {
             LevelUpGamerMobileTheme {

@@ -41,13 +41,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-// import coil.compose.AsyncImage
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
 import com.example.levelupgamermobile.ui.state.ProductListUiState
 import com.example.levelupgamermobile.ui.viewmodel.ProductoViewModel
 import com.example.levelupgamermobile.data.local.entity.ProductoEntity
 import com.example.levelupgamermobile.ui.AppViewModelProvider
 import com.example.levelupgamermobile.ui.theme.LvlUpGreen
 import com.example.levelupgamermobile.ui.theme.Orbitron // ¡NUEVO! Importa la fuente
+import com.example.levelupgamermobile.utils.getImageResForProduct // Importa la utilidad de imágenes
+import com.example.levelupgamermobile.R
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
@@ -71,6 +75,10 @@ fun ProductListScreen(
                 snackbarHostState.showSnackbar(message)
             }
         }
+    }
+
+    LaunchedEffect(uiState.filteredProducts.size) {
+        println("ProductListScreen: Cargando ${uiState.filteredProducts.size} productos")
     }
 
     Scaffold(
@@ -224,13 +232,15 @@ fun ProductItem(
     ) {
         Column {
             // (1) La IMAGEN es clickeable (para ir al detalle)
-            // Usamos Coil AsyncImage para cargar desde URL
-            // val imagenUrl = producto.imagenes.firstOrNull() ?: ""
-            Image(
-                painter = painterResource(id = producto.imageRes),
+            // Usamos Coil AsyncImage para cargar desde URL o Recursos locales de forma segura
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(getImageResForProduct(producto.codigo))
+                    .crossfade(true)
+                    .build(),
+                placeholder = painterResource(R.drawable.placeholder_image),
+                error = painterResource(R.drawable.placeholder_image),
                 contentDescription = producto.nombre,
-                // placeholder = painterResource(id = android.R.drawable.ic_menu_gallery), // Placeholder simple
-                // error = painterResource(id = android.R.drawable.stat_notify_error), // Error simple
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
