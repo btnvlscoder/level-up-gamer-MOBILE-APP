@@ -13,8 +13,15 @@ splashscreen = "1.0.1"
 datastore = "1.1.1"           # <-- NUEVA: Para guardar la sesión
 retrofit = "2.11.0"           # <-- NUEVA: Para la red
 okhttp = "4.12.0"             # <-- NUEVA: Para la red
+room = "2.6.1"                # <-- NUEVA: Para base de datos local
+ksp = "2.0.21-1.0.27"         # <-- NUEVA: Para procesar anotaciones
+coil = "2.6.0"
+mockk = "1.13.8"
+coroutines = "1.7.3"
 
 [libraries]
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -42,8 +49,15 @@ retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-
 okhttp-core = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 okhttp-logging-interceptor = { group = "com.squareup.okhttp3", name = "logging-interceptor", version.ref = "okhttp" }
 
+# --- Room Database ---
+androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
+androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
+androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 

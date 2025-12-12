@@ -1,7 +1,8 @@
 package com.example.levelupgamermobile
 
 import android.app.Application
-import com.example.levelupgamermobile.data.SessionManager
+import com.example.levelupgamermobile.data.AppContainer
+import com.example.levelupgamermobile.data.DefaultAppContainer
 
 /**
  * Clase de Aplicación personalizada.
@@ -9,21 +10,14 @@ import com.example.levelupgamermobile.data.SessionManager
  */
 class LevelUpGamerApp : Application() {
 
-    // (1) Creamos una "propiedad estática" (companion object)
-    // para nuestro SessionManager.
-    companion object {
-        lateinit var sessionManager: SessionManager
-            private set // "private set" = solo esta clase puede asignarle un valor
-    }
+    lateinit var container: AppContainer
 
     /**
-     * (2) "onCreate" es el primer código que se ejecuta
+     * "onCreate" es el primer código que se ejecuta
      * cuando se lanza la app.
      */
     override fun onCreate() {
         super.onCreate()
-        // Creamos la instancia única de SessionManager,
-        // pasándole el "Contexto" de la aplicación (this).
-        sessionManager = SessionManager(this)
+        container = DefaultAppContainer(this)
     }
 }

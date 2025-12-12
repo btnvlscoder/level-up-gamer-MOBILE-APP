@@ -19,11 +19,11 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.levelupgamermobile.navigation.AppScreens
 import com.example.levelupgamermobile.ui.theme.LevelUpGamerMobileTheme
-import com.example.levelupgamermobile.view.CameraScreen
-import com.example.levelupgamermobile.view.HomeScreen
-import com.example.levelupgamermobile.view.LoginScreen
-import com.example.levelupgamermobile.view.ProductDetailScreen
-import com.example.levelupgamermobile.view.RegisterScreen
+import com.example.levelupgamermobile.ui.screens.CameraScreen
+import com.example.levelupgamermobile.ui.screens.HomeScreen
+import com.example.levelupgamermobile.ui.screens.LoginScreen
+import com.example.levelupgamermobile.ui.screens.ProductDetailScreen
+import com.example.levelupgamermobile.ui.screens.RegisterScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -81,7 +81,7 @@ class MainActivity : ComponentActivity() {
                         ) {
                             RegisterScreen(
                                 onRegisterSuccess = {
-                                    // ¡CAMBIO! Navega a HOME
+                                    // Navega a HOME
                                     navController.navigate(AppScreens.HOME) {
                                         // Borra Login y Register de la pila
                                         popUpTo(AppScreens.LOGIN) { inclusive = true }
@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        // --- Ruta 3: ¡NUEVA! Home (El Contenedor) ---
+                        // --- Ruta 3: Home (El Contenedor) ---
                         composable(
                             route = AppScreens.HOME,
                             // (Desde Login/Register) Entra desde la derecha
