@@ -42,7 +42,8 @@ object AppViewModelProvider {
         initializer {
             CartViewModel(
                 carritoRepository = levelUpGamerApplication().container.carritoRepository,
-                ventaRepository = levelUpGamerApplication().container.ventaRepository
+                ventaRepository = levelUpGamerApplication().container.ventaRepository,
+                authRepository = levelUpGamerApplication().container.authRepository
             )
         }
 

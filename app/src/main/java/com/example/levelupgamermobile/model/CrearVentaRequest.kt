@@ -3,13 +3,17 @@ package com.example.levelupgamermobile.model
 import com.google.gson.annotations.SerializedName
 
 /**
- * Coincide con el CrearVentaRequestDTO del backend.
- * Solo contiene los datos que el backend necesita para procesar la venta.
+ * Coincide con la entidad Venta del backend.
  */
 data class CrearVentaRequest(
-    @SerializedName("userId")
-    val userId: Int,
+    @SerializedName("usuario")
+    val usuario: UsuarioRequest,
 
-    @SerializedName("items")
-    val items: List<VentaItemRequest>
+    @SerializedName("detalles")
+    val detalles: List<VentaItemRequest>
+)
+
+data class UsuarioRequest(
+    @SerializedName("email")
+    val email: String
 )

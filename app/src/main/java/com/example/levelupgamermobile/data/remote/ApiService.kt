@@ -33,9 +33,9 @@ interface ApiService {
     suspend fun registrar(@Body usuarioDto: UsuarioDTO): Response<UsuarioResponse>
 
     /**
-     * Coincide con tu @PostMapping("/ventas/completa")
+     * Coincide con tu @PostMapping("/ventas")
      */
-    @POST("ventas/completa") // 
+    @POST("ventas") 
     suspend fun crearVenta(@Body crearVentaRequest: CrearVentaRequest): Response<Unit>
 
     // --- TICKETS ---

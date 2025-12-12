@@ -10,6 +10,9 @@ data class UsuarioEntity(
     @SerializedName("email")
     val email: String,
 
+    @SerializedName("id")
+    val id: Int = 0,
+
     @SerializedName("rut")
     val rut: String,
 

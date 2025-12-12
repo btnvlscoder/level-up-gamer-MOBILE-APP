@@ -54,7 +54,8 @@ class DefaultAppContainer(private val context: Context) : AppContainer {
 
     override val ventaRepository: VentaRepository by lazy {
         VentaRepository(
-            ventaDao = database.ventaDao()
+            ventaDao = database.ventaDao(),
+            apiService = RetrofitProvider.apiService
         )
     }
 

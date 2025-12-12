@@ -9,6 +9,9 @@ interface CarritoDao {
     @Query("SELECT * FROM carrito_items")
     fun obtenerCarrito(): Flow<List<CarritoItemEntity>>
 
+    @Query("SELECT * FROM carrito_items WHERE codigoProducto = :codigoProducto LIMIT 1")
+    suspend fun obtenerItemPorCodigo(codigoProducto: String): CarritoItemEntity?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun agregarItem(item: CarritoItemEntity)
 

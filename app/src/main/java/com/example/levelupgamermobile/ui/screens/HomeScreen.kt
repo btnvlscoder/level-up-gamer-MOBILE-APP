@@ -121,6 +121,7 @@ fun HomeScreen(
             // --- Pestaña 2: Carrito ---
             composable(BottomNavItem.Cart.route) {
                 CartScreen(
+                    viewModel = cartViewModel,
                     onBackPress = { nestedNavController.popBackStack() },
                     onComprarClick = {
                         nestedNavController.navigate("voucher")
@@ -131,6 +132,7 @@ fun HomeScreen(
             // --- Ruta del Voucher ---
             composable("voucher") {
                 VoucherScreen(
+                    viewModel = cartViewModel,
                     onFinalizarClick = {
                         nestedNavController.navigate(BottomNavItem.Store.route) {
                             popUpTo(nestedNavController.graph.findStartDestination().id) {

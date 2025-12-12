@@ -19,7 +19,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Remove
-
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,10 +28,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -40,13 +44,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-// import coil.compose.AsyncImage
-import com.example.levelupgamermobile.ui.state.CartUiState
-import com.example.levelupgamermobile.ui.viewmodel.CartViewModel
 import com.example.levelupgamermobile.data.local.entity.CarritoItemEntity
 import com.example.levelupgamermobile.ui.AppViewModelProvider
+import com.example.levelupgamermobile.ui.state.CartUiState
+import com.example.levelupgamermobile.ui.viewmodel.CartViewModel
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.ui.platform.LocalContext
 
 /**
  * Pantalla "inteligente" del Carrito
@@ -58,11 +62,36 @@ fun CartScreen(
     onComprarClick: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Efecto para navegar cuando la compra se completa
+    LaunchedEffect(Unit) {
+        viewModel.purchaseComplete.collect { success ->
+            if (success) {
+                onComprarClick()
+            }
+        }
+    }
+
+    // Efecto para mostrar mensajes (errores o éxito) desde SharedFlow
+    LaunchedEffect(Unit) {
+        viewModel.snackbarMessage.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+
+    // Efecto para mostrar errores de carga (desde UiState)
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let { error ->
+            snackbarHostState.showSnackbar(error)
+        }
+    }
 
     CartScreenContent(
         uiState = uiState,
+        snackbarHostState = snackbarHostState,
         onBackPress = onBackPress,
-        onComprarClick = onComprarClick,
+        onComprarClick = { viewModel.savePurchase() }, // Llama al VM para procesar compra
         onIncrease = { viewModel.increaseQuantity(it) },
         onDecrease = { viewModel.decreaseQuantity(it) },
         onRemove = { viewModel.removeItem(it) }
@@ -76,6 +105,7 @@ fun CartScreen(
 @Composable
 fun CartScreenContent(
     uiState: CartUiState,
+    snackbarHostState: SnackbarHostState,
     onBackPress: () -> Unit,
     onComprarClick: () -> Unit,
     onIncrease: (String) -> Unit,
@@ -83,6 +113,7 @@ fun CartScreenContent(
     onRemove: (String) -> Unit
 ) {
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Carrito de Compras") },
@@ -109,7 +140,7 @@ fun CartScreenContent(
                     ) {
                         Text(
                             "Total:",
-                            style = MaterialTheme. typography.titleLarge
+                            style = MaterialTheme.typography.titleLarge
                         )
                         Text(
                             formatPrice(uiState.total.toInt()),
@@ -145,7 +176,7 @@ fun CartScreenContent(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(uiState.items, key = { it.codigoProducto }) { item ->
+                items(uiState.items) { item ->
                     CartItemRow(
                         item = item,
                         onIncrease = { onIncrease(item.codigoProducto) },
@@ -157,6 +188,7 @@ fun CartScreenContent(
         }
     }
 }
+
 
 /**
  * Composable para UNA fila del carrito
@@ -174,15 +206,39 @@ fun CartItemRow(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // val imagenUrl = item.imagenUrl ?: ""
-                Image(
-                    painter = painterResource(id = item.imageRes),
-                    contentDescription = item.nombreProducto,
-                    // placeholder = painterResource(id = android.R.drawable.ic_menu_gallery),
-                    // error = painterResource(id = android.R.drawable.stat_notify_error),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(80.dp)
-                )
+                // Validación segura de recursos de imagen
+                val context = LocalContext.current
+                val isImageValid = remember(item.imageRes) {
+                    try {
+                        // Intentamos obtener el nombre del recurso para verificar si existe
+                        if (item.imageRes != 0) {
+                            context.resources.getResourceName(item.imageRes)
+                            true
+                        } else {
+                            false
+                        }
+                    } catch (e: Exception) {
+                        false
+                    }
+                }
+
+                if (isImageValid) {
+                    Image(
+                        painter = painterResource(id = item.imageRes),
+                        contentDescription = item.nombreProducto,
+                        modifier = Modifier.size(80.dp),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    // Fallback si la imagen no es válida
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = item.nombreProducto,
+                        modifier = Modifier.size(80.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -192,7 +248,6 @@ fun CartItemRow(
                     Text(formatPrice((item.precioUnitario * item.cantidad).toInt()))
                 }
                 IconButton(onClick = onRemove) {
-                    // --- CORRECCIÓN AQUÍ ---
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Eliminar"

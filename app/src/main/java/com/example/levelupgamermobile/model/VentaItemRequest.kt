@@ -3,6 +3,9 @@ package com.example.levelupgamermobile.model
 import com.google.gson.annotations.SerializedName
 
 data class VentaItemRequest(
+    @SerializedName("codigoProducto")
+    val codigoProducto: String,
+
     @SerializedName("nombreProducto")
     val nombreProducto: String,
 
@@ -10,5 +13,5 @@ data class VentaItemRequest(
     val cantidad: Int,
 
     @SerializedName("precio")
-    val precio: Int // Cambiado a Int para que coincida con el backend
+    val precio: Int
 )

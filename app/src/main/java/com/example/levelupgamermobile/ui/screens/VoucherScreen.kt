@@ -55,17 +55,19 @@ fun VoucherScreen(
     viewModel: CartViewModel = viewModel(factory = AppViewModelProvider.Factory),
     onFinalizarClick: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val lastPurchase by viewModel.lastPurchase.collectAsStateWithLifecycle()
+    val items = lastPurchase?.items ?: emptyList()
+    val total = lastPurchase?.total ?: 0.0
 
     // Create the receipt-like string
     val sb = StringBuilder()
     sb.append("BOLETA DE COMPRA\n")
     sb.append("----------------\n")
-    uiState.items.forEach { item ->
+    items.forEach { item ->
         sb.append("${item.nombreProducto} x ${item.cantidad}  ${formatPrice((item.precioUnitario * item.cantidad).toInt())}\n")
     }
     sb.append("----------------\n")
-    sb.append("TOTAL: ${formatPrice(uiState.total.toInt())}")
+    sb.append("TOTAL: ${formatPrice(total.toInt())}")
 
     val voucherDataAsString = sb.toString()
 
@@ -76,8 +78,6 @@ fun VoucherScreen(
         bottomBar = {
             Button(
                 onClick = {
-                    viewModel.savePurchase()
-                    viewModel.clearCart()
                     onFinalizarClick()
                 },
                 modifier = Modifier
@@ -108,7 +108,7 @@ fun VoucherScreen(
             }
 
             // (Lista de items comprados)
-            items(uiState.items, key = { it.codigoProducto }) { item ->
+            items(items, key = { it.codigoProducto }) { item ->
                 VoucherItemRow(item = item)
             }
 
@@ -121,7 +121,7 @@ fun VoucherScreen(
                 ) {
                     Text("Total Pagado:", style = MaterialTheme.typography.titleLarge)
                     Text(
-                        formatPrice(uiState.total.toInt()),
+                        formatPrice(total.toInt()),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary

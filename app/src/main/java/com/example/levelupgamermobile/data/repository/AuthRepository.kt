@@ -67,6 +67,7 @@ class AuthRepository(
     private fun UsuarioDTO.toEntity(): UsuarioEntity {
         return UsuarioEntity(
             email = this.email,
+            id = this.id,
             rut = this.rut,
             nombre = this.nombre,
             apellidoPaterno = this.apellidoPaterno,

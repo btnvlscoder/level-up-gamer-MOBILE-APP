@@ -22,7 +22,7 @@ import com.example.levelupgamermobile.data.local.entity.VentaEntity
         CarritoItemEntity::class,
         ResenaEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
